@@ -1,0 +1,56 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.local
+secrets/
+credentials/
+serviceAccount*.json
+*-firebase-adminsdk*.json
+firebase-adminsdk*.json
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.runtimeconfig.json
+
+# Node / build
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+out/
+coverage/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local app data / encryption keys (never commit)
+keys/
+*.pem
+*.key
+*.p12
+*.pfx
+private/
+local-data/
+indexeddb-export/
+*.enc
+*.vault
+
+# Large media dumps
+uploads/
+tmp/
+temp/

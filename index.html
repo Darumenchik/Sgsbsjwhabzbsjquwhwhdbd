@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#030F05">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>Chiper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="app">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="toast glass r18" id="toast"></div>
+
+  <!-- Context menu -->
+  <div class="ctx-menu glass" id="ctxMenu" role="menu"></div>
+  <!-- Reaction picker -->
+  <div class="reaction-picker" id="reactionPicker"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 id="modalTitle">Доступ к микрофону</h3>
+      <p id="modalText">Разрешите доступ к микрофону в настройках браузера, чтобы записывать голосовые сообщения.</p>
+      <div class="modal-actions">
+        <button class="glass" style="color:var(--text)" onclick="closeModal()">Понятно</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LOGIN ===================== -->
+  <div class="screen active" id="screen-login">
+    <div class="auth-wrap">
+      <div class="auth-logo" aria-hidden="true"><img class="brand-logo" src="logo.jpg" alt="Chiper" width="40" height="40"></div>
+      <div class="auth-title">Chiper</div>
+      <div class="auth-sub">Введите email и получите код для входа</div>
+      <div class="auth-card glass r28">
+        <div class="auth-step-title">Вход по email</div>
+        <div class="field glass r20"><input type="email" id="loginUser" placeholder="you@gmail.com" autocomplete="email" aria-label="Email" onkeydown="if(event.key==='Enter'){rippleFx(event); doLogin()}"></div>
+        <div class="auth-error" id="loginError"></div>
+        <button type="button" class="gradient-btn full-btn r20 pressable" id="loginBtn" type="button" onclick="event.preventDefault();event.stopPropagation();rippleFx(event);doLogin();return false;">Получить код</button>
+      </div>
+      <div class="auth-link">Нет аккаунта? <b onclick="go('register')" role="button" tabindex="0">Создать аккаунт</b></div>
+    </div>
+  </div>
+
+  <!-- ===================== REGISTER ===================== -->
+  <div class="screen" id="screen-register">
+    <div class="auth-wrap">
+      <div class="auth-logo" style="animation-delay:0.4s;" aria-hidden="true"><img class="brand-logo" src="logo.jpg" alt="Chiper" width="40" height="40"></div>
+      <div class="auth-title">Подтверждение</div>
+      <div class="auth-sub" id="otpHint">Введите 6-значный код</div>
+      <div class="auth-card glass r28">
+        <div class="auth-step-title">Код из письма</div>
+        <div class="field glass r20"><input type="text" id="otpCode" placeholder="Введите код" autocomplete="one-time-code" aria-label="Код" maxlength="64" onkeydown="if(event.key==='Enter'){rippleFx(event); doRegister()}"></div>
+        <div class="auth-error" id="regError"></div>
+        <button type="button" class="gradient-btn full-btn r20 pressable" id="regBtn" type="button" onclick="event.preventDefault();event.stopPropagation();rippleFx(event);doRegister();return false;">Подтвердить</button>
+      </div>
+      <div class="auth-link"><b onclick="go('login')" role="button" tabindex="0">Изменить email</b></div>
+    </div>
+  </div>
+
+  <!-- ===================== ONBOARDING PROFILE ===================== -->
+  <div class="screen" id="screen-onboarding">
+    <div class="auth-wrap" style="justify-content:flex-start; padding-top:28px;">
+      <div class="auth-logo" aria-hidden="true" style="margin-bottom:12px;">
+        <img class="brand-logo" src="logo.jpg" alt="Chiper" width="40" height="40">
+      </div>
+      <div class="auth-title" style="font-size:22px;">Создай профиль</div>
+      <div class="auth-sub">Фото, имя и @username — так тебя увидят в Chiper</div>
+      <div class="auth-card glass r28" style="margin-top:20px;">
+        <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:12px; gap:10px;">
+          <div class="avatar av-g3 pressable" id="onboardAvatar" style="width:104px;height:104px;font-size:32px;border:3px solid color-mix(in srgb, var(--primary) 40%, transparent);" onclick="document.getElementById('onboardAvatarFile').click()" role="button" tabindex="0" aria-label="Загрузить фото">?</div>
+          <input type="file" id="onboardAvatarFile" accept="image/*" style="display:none" onchange="handleOnboardAvatar(this)">
+          <button type="button" class="glass r999 pressable" style="height:36px;padding:0 14px;font-size:13px;font-weight:600;border:none;color:var(--text);" onclick="document.getElementById('onboardAvatarFile').click()">📷 Загрузить фото</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+            <button type="button" class="avatar-preset active" onclick="selectPresetAvatar('av-g1','A')" aria-label="Аватар A">A</button>
+            <button type="button" class="avatar-preset" onclick="selectPresetAvatar('av-g2','B')" aria-label="Аватар B">B</button>
+            <button type="button" class="avatar-preset" onclick="selectPresetAvatar('av-g3','C')" aria-label="Аватар C">C</button>
+            <button type="button" class="avatar-preset" onclick="selectPresetAvatar('av-g4','D')" aria-label="Аватар D">D</button>
+          </div>
+        </div>
+        <div class="field glass r20"><input type="text" id="onboardName" placeholder="Имя (как к тебе обращаться)" aria-label="Имя" maxlength="40" autocomplete="name"></div>
+        <div class="field glass r20"><input type="text" id="onboardUser" placeholder="@username" aria-label="Username" maxlength="32" autocomplete="username" oninput="this.value=this.value.replace(/[^a-zA-Z0-9._@]/g,'')"></div>
+        <div class="field glass r20" style="height:auto;padding:14px 18px;">
+          <textarea id="onboardBio" rows="2" placeholder="О себе (необязательно)" style="font-family:Inter,sans-serif;font-size:15px;width:100%;background:transparent;border:none;color:var(--text);outline:none;resize:none;" aria-label="О себе"></textarea>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);line-height:1.4;">Позицию аватарки на профиле можно будет выбрать: слева, по центру или справа.</div>
+        <div class="auth-error" id="onboardError"></div>
+        <button type="button" class="gradient-btn full-btn r20 pressable" id="onboardDoneBtn"
+          style="position:relative;z-index:20;touch-action:manipulation;"
+          onclick="event.preventDefault();event.stopPropagation();finishOnboarding();return false;">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CHATS (MAIN) ===================== -->
+  <div class="screen" id="screen-chats">
+    <div class="chats-topbar">
+      <div class="chats-user" onclick="go('profile')" role="button" tabindex="0">
+        <div class="avatar av-g3" id="chatsTopAvatar" style="width:36px;height:36px;font-size:13px;border:2px solid var(--primary);">?</div>
+        <div class="chats-username" id="chatsTopName">Chiper</div>
+      </div>
+      <div class="chats-top-actions">
+        <button class="icon-btn pressable" onclick="rippleFx(event); go('newchat'); setTimeout(()=>document.getElementById('contactSearch')?.focus(),120)" aria-label="Поиск">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+        <button class="icon-btn pressable" id="burgerBtn" onclick="rippleFx(event); toggleDrawer()" aria-label="Меню" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+        </button>
+        <button class="icon-btn pressable" onclick="rippleFx(event); showToast('Поделиться')" aria-label="Поделиться">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-filter-tabs" id="chatFilterTabs" role="tablist">
+      <button class="filter-tab active" data-filter="all" onclick="setChatFilter('all', this)" role="tab">Все</button>
+      <button class="filter-tab" data-filter="personal" onclick="setChatFilter('personal', this)" role="tab">Личные</button>
+      <button class="filter-tab" data-filter="groups" onclick="setChatFilter('groups', this)" role="tab">Группы</button>
+      <button class="filter-tab" data-filter="channels" onclick="setChatFilter('channels', this)" role="tab">Каналы</button>
+    </div>
+
+    <div class="screen-scroll" id="chatsScroll" style="padding-top:0;">
+      <div class="ptr" id="ptr">Обновление…</div>
+      <div id="chatList"></div>
+    </div>
+
+    <button class="fab-float pressable" onclick="rippleFx(event); go('newchat')" aria-label="Новый чат">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <div class="bottom-nav glass" data-nav="main">
+      <div class="nav-bubble" id="navBubble"></div>
+      <button class="nav-item active" data-nav-idx="0" onclick="go('chats'); moveNavBubble(this)" aria-label="Чаты">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Чаты</span>
+        <span class="nav-badge" id="chatsNavBadge">3</span>
+      </button>
+      <button class="nav-item" data-nav-idx="1" onclick="go('settings'); moveNavBubble(this)" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+      <button class="nav-item" data-nav-idx="2" onclick="go('profile'); moveNavBubble(this)" aria-label="Профиль">
+        <div class="nav-avatar avatar av-g3" id="navProfileAvatar" style="width:26px;height:26px;font-size:11px;">?</div>
+        <span>Профиль</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== CHAT (conversation) ===================== -->
+  <div class="screen" id="screen-chat">
+    <div class="chat-header glass">
+      <button class="icon-btn pressable r20" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="avatar av-g1 pressable" id="chatAvatar" style="width:42px;height:42px;font-size:14px;" onclick="go('userinfo')" role="button" tabindex="0">?</div>
+      <div class="info pressable" onclick="go('userinfo')" role="button" tabindex="0">
+        <div class="name" id="chatName">Чат</div>
+        <div class="status" id="chatStatus">—</div>
+      </div>
+      <button class="icon-btn pressable r20" onclick="toggleMsgSearch()" aria-label="Поиск по сообщениям">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="icon-btn pressable r20" id="chatCallAudioBtn" onclick="startCall(false)" aria-label="Аудиозвонок" title="Аудиозвонок">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </button>
+      <button class="icon-btn pressable r20" id="chatCallVideoBtn" onclick="startCall(true)" aria-label="Видеозвонок" title="Видеозвонок">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </button>
+    </div>
+
+    <div class="search-msg-bar" id="msgSearchBar">
+      <input type="text" id="msgSearchInput" placeholder="Поиск в чате…" oninput="searchInChat()" onkeydown="if(event.key==='Enter'){event.preventDefault();searchInChatNav(1);}" aria-label="Поиск в чате">
+      <div class="search-nav">
+        <span class="search-count" id="searchCount">0</span>
+        <button type="button" onclick="searchInChatNav(-1)" aria-label="Предыдущий">↑</button>
+        <button type="button" onclick="searchInChatNav(1)" aria-label="Следующий">↓</button>
+      </div>
+      <button class="icon-btn" onclick="toggleMsgSearch()" aria-label="Закрыть поиск">✕</button>
+    </div>
+
+    <div class="pinned-bar glass" id="pinnedBar">
+      <svg class="pin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" onclick="scrollToPinned()"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1z"/></svg>
+      <div style="flex:1;min-width:0;" onclick="scrollToPinned()">
+        <div class="pin-label">Закреплено</div>
+        <div class="pin-text" id="pinnedText">—</div>
+      </div>
+      <button type="button" class="pin-unpin" onclick="event.stopPropagation(); unpinMessage();" title="Открепить" aria-label="Открепить">✕</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="reply-bar" id="replyBar">
+      <div class="reply-info">
+        <div class="reply-name" id="replyName"></div>
+        <div class="reply-text" id="replyText"></div>
+      </div>
+      <button class="icon-btn" onclick="cancelReply()" aria-label="Отменить ответ">✕</button>
+    </div>
+
+    <div class="select-toolbar" id="selectToolbar">
+      <span class="sel-count" id="selCount">0 выбрано</span>
+      <button type="button" onclick="selectAllVisible()">Все</button>
+      <button type="button" onclick="batchCopy()">📋</button>
+      <button type="button" onclick="batchForward()">↪</button>
+      <button type="button" class="danger" onclick="batchDelete()">🗑</button>
+      <button type="button" onclick="exitSelectMode()">✕</button>
+    </div>
+
+    <div class="input-bar" id="inputBar">
+      <button class="round-icon glass pressable" onclick="document.getElementById('fileInput').click()" aria-label="Прикрепить файл">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileAttach(this)">
+      <div class="field glass r22">
+        <input type="text" id="msgInput" placeholder="Сообщение" oninput="onTypeInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage();}" autocomplete="off" enterkeyhint="send" aria-label="Текст сообщения">
+      </div>
+      <div class="mic-send-swap" id="micSendSwap">
+        <button class="round-icon glass icon-mic pressable" id="micBtn"
+             onpointerdown="startRecording(event)" onpointerup="stopRecording()" onpointerleave="onRecPointerLeave(event)"
+             onpointermove="onRecPointerMove(event)" aria-label="Голосовое сообщение">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg>
+        </button>
+        <button class="round-icon send-btn icon-send pressable" onclick="rippleFx(event); sendMessage()" aria-label="Отправить">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="#fff"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="recording-bar" id="recordingBar">
+      <div class="rec-dot"></div>
+      <div class="rec-timer" id="recTimer">0:00</div>
+      <div class="rec-live-wave" id="recWave"></div>
+      <button class="icon-btn pressable rec-cancel" onclick="rippleFx(event); cancelRecording()" aria-label="Отменить запись">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+      </button>
+      <button class="round-icon send-btn pressable" onclick="rippleFx(event); stopRecording()" aria-label="Отправить голосовое">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M20 6L9 17l-5-5"/></svg>
+      </button>
+    </div>
+    
+    <div class="channel-readonly-hint" id="channelReadonlyHint">Только администраторы могут писать в канале</div>
+
+    <div class="rec-hint" id="recHint">← Свайп влево для отмены</div>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div class="screen" id="screen-settings">
+    <div class="screen-scroll">
+      <div class="settings-title">Настройки</div>
+      <div class="profile-mini glass r24 pressable" onclick="go('profile')" role="button" tabindex="0">
+        <div class="avatar av-g3" id="miniAvatar" style="width:56px;height:56px;font-size:18px;">?</div>
+        <div style="flex:1;min-width:0;"><div class="name" id="miniName">Пользователь</div><div class="username" id="miniUsername">@user</div></div>
+        <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <div class="settings-group">
+        <div class="section-label">Аккаунт</div>
+        <div class="section-card glass r22">
+          <div class="section-row pressable" onclick="go('profile')" role="button" tabindex="0">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="label" style="flex:1;min-width:0;">
+              <div>Мой профиль</div>
+              <div class="hint-text" style="margin:2px 0 0;font-size:12px;">Имя, фото, bio</div>
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="section-row pressable" onclick="go('privacy')" role="button" tabindex="0">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="label" style="flex:1;min-width:0;">
+              <div>Конфиденциальность</div>
+              <div class="hint-text" style="margin:2px 0 0;font-size:12px;">Email, пароль, безопасность</div>
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="section-label">Чаты и звук</div>
+        <div class="section-card glass r22">
+          <div class="section-row">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+            <div class="label" style="flex:1;">Уведомления</div>
+            <div class="toggle on" id="notifToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on')); saveSettings()" role="switch" aria-checked="true"></div>
+          </div>
+          <div class="section-row">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div>
+            <div class="label" style="flex:1;">Звук сообщений</div>
+            <div class="toggle on" id="soundToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on')); saveSettings()" role="switch" aria-checked="true"></div>
+          </div>
+          <div class="section-row">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+            <div class="label" style="flex:1;">Показывать «в сети»</div>
+            <div class="toggle on" id="onlineToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on')); saveSettings()" role="switch" aria-checked="true"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="section-label">Оформление</div>
+        <div class="section-card glass r22">
+          <div class="section-row pressable" onclick="go('customize')" role="button" tabindex="0">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.1L18 9l-4.1 1.9L12 15l-1.9-4.1L6 9l4.1-1.9L12 3z"/><path d="M5 19h14"/></svg></div>
+            <div class="label" style="flex:1;min-width:0;">
+              <div>Кастомизация</div>
+              <div class="hint-text" style="margin:2px 0 0;font-size:12px;">Тема, цвет, пузыри</div>
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="section-row pressable" onclick="toggleTheme(); showToast('Тема переключена')" role="button" tabindex="0">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+            <div class="label" style="flex:1;">Сменить тему</div>
+            <span class="hint-text" id="settingsThemeHint" style="font-size:12px;margin:0;">авто</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="section-label">Подписка</div>
+        <div class="section-card glass r22">
+          <div class="section-row pressable" onclick="go('premium')" role="button" tabindex="0">
+            <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(234,179,8,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+            <div class="label" style="flex:1;">Premium <span class="premium-badge" id="settingsPremiumBadge" style="display:none;">PRO</span></div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="section-row pressable" onclick="go('coins')" role="button" tabindex="0">
+            <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(35,159,248,0.2),rgba(59,130,246,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#239FF8" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+            <div class="label" style="flex:1;">Chiper Coin</div>
+            <span class="hint-text" id="settingsCoinsHint" style="font-size:12px;margin:0;">0 CC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="section-label">О приложении</div>
+        <div class="section-card glass r22">
+          <div class="section-row">
+            <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></div>
+            <div class="label" style="flex:1;">Версия</div>
+            <span class="hint-text" style="font-size:12px;margin:0;">Chiper 1.0</span>
+          </div>
+          <div class="section-row pressable" id="adminSettingsRow" onclick="go('admin')" role="button" tabindex="0" style="display:none;">
+            <div class="icon-wrap" style="background:rgba(239,68,68,0.12);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="label">Админ-панель</div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav glass" data-nav="settings">
+      <div class="nav-bubble"></div>
+      <button class="nav-item" data-nav-idx="0" onclick="go('chats'); moveNavBubble(this)" aria-label="Чаты">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Чаты</span>
+      </button>
+      <button class="nav-item active" data-nav-idx="1" onclick="go('settings'); moveNavBubble(this)" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+      <button class="nav-item" data-nav-idx="2" onclick="go('profile'); moveNavBubble(this)" aria-label="Профиль">
+        <div class="nav-avatar avatar av-g3" style="width:26px;height:26px;font-size:11px;">?</div>
+        <span>Профиль</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ===================== CUSTOMIZE ===================== -->
+  <div class="screen" id="screen-customize">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Кастомизация</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+        <div class="label">Тёмная тема</div>
+        <div class="toggle on" id="themeToggle" onclick="event.stopPropagation(); toggleTheme()" role="switch" aria-checked="true"></div>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="label">Тема по расписанию (22–7)</div>
+        <div class="toggle" id="themeScheduleToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); state.settings.themeSchedule=this.classList.contains('on'); applyThemeSchedule(); saveMeta(); showToast(state.settings.themeSchedule?'Расписание вкл.':'Расписание выкл.');" role="switch" aria-checked="false"></div>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h14"/></svg></div>
+        <div class="label">Компактный режим</div>
+        <div class="toggle" id="compactToggle" onclick="event.stopPropagation(); toggleCompact()" role="switch" aria-checked="false"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Акцентный цвет</div>
+      <div class="accent-swatches" style="padding:0 4px;">
+        <div class="swatch" data-c="purple" onclick="setAccent('purple')" title="Фиолетовый"></div>
+        <div class="swatch active" data-c="blue" onclick="setAccent('blue')" title="Синий"></div>
+        <div class="swatch" data-c="pink" onclick="setAccent('pink')" title="Розовый"></div>
+        <div class="swatch" data-c="teal" onclick="setAccent('teal')" title="Бирюзовый"></div>
+        <div class="swatch" data-c="orange" onclick="setAccent('orange')" title="Оранжевый"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Стиль пузырьков сообщений <span class="premium-badge" id="bubbleStyleProBadge" style="display:none;">PRO</span></div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:8px;" id="bubbleStyleHint">Стиль 1 доступен всем. Остальные 9 — в Chiper Premium.</div>
+      <div class="bubble-style-picker" id="bubbleStylePicker"></div>
+
+      <div class="section-label" style="margin-top:20px;">Позиция аватара на профиле</div>
+      <div class="avatar-pos-picker" id="avatarPosPicker" role="group" aria-label="Позиция аватара">
+        <button type="button" class="avatar-pos-btn" data-pos="left" onclick="setAvatarPosition('left')">◀ Слева</button>
+        <button type="button" class="avatar-pos-btn active" data-pos="center" onclick="setAvatarPosition('center')">● Центр</button>
+        <button type="button" class="avatar-pos-btn" data-pos="right" onclick="setAvatarPosition('right')">Справа ▶</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Галерея аватаров</div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:8px;">До 5 аватаров. Нажмите, чтобы сделать основным.</div>
+      <div id="avatarGallery" style="display:flex;flex-wrap:wrap;gap:10px;padding:4px;"></div>
+      <button type="button" class="glass full-btn r20" style="margin-top:12px;height:48px;font-weight:700;color:var(--text);" onclick="document.getElementById('multiAvatarFile').click()">＋ Добавить аватар</button>
+      <input type="file" id="multiAvatarFile" accept="image/*,video/*" style="display:none" onchange="addAvatarFromFile(this)">
+
+      <div class="section-label" style="margin-top:24px;">Обои чата</div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:4px;">Фон области сообщений</div>
+      <div class="wallpaper-picker" id="wallpaperPicker">
+        <div class="wp-swatch active" data-wp="default" onclick="setChatWallpaper('default')" title="По умолчанию"></div>
+        <div class="wp-swatch" data-wp="soft" onclick="setChatWallpaper('soft')" title="Мягкий"></div>
+        <div class="wp-swatch" data-wp="dots" onclick="setChatWallpaper('dots')" title="Точки"></div>
+        <div class="wp-swatch" data-wp="grid" onclick="setChatWallpaper('grid')" title="Сетка"></div>
+        <div class="wp-swatch" data-wp="sunset" onclick="setChatWallpaper('sunset')" title="Закат"></div>
+        <div class="wp-swatch" data-wp="ocean" onclick="setChatWallpaper('ocean')" title="Океан"></div>
+        <div class="wp-swatch" data-wp="mint" onclick="setChatWallpaper('mint')" title="Мята"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:24px;">Размер шрифта</div>
+      <div class="font-size-picker" id="fontSizePicker">
+        <button type="button" class="font-size-btn" data-fs="sm" onclick="setFontSize('sm')">Аа</button>
+        <button type="button" class="font-size-btn active" data-fs="md" onclick="setFontSize('md')">Аа</button>
+        <button type="button" class="font-size-btn" data-fs="lg" onclick="setFontSize('lg')">Аа</button>
+      </div>
+
+      <div class="section-label" style="margin-top:24px;">Скругление пузырьков</div>
+      <div class="radius-picker" id="radiusPicker">
+        <button type="button" class="radius-btn" data-r="sharp" onclick="setBubbleRadius('sharp')">Острые</button>
+        <button type="button" class="radius-btn active" data-r="default" onclick="setBubbleRadius('default')">Обычные</button>
+        <button type="button" class="radius-btn" data-r="round" onclick="setBubbleRadius('round')">Круглые</button>
+      </div>
+
+      <div class="section-label" style="margin-top:24px;">Статус в профиле</div>
+      <div class="field glass r20" style="margin-top:8px;">
+        <input type="text" id="customStatusInput" placeholder="Напр. 🎧 Слушаю музыку" maxlength="40" aria-label="Кастомный статус">
+      </div>
+      <button type="button" class="gradient-btn full-btn r20" style="margin-top:12px;height:48px;" onclick="saveCustomStatus()">Сохранить статус</button>
+      <p class="hint-text" style="text-align:center;margin-top:8px;">Кастомный статус виден в профиле (Premium показывает его ярче)</p>
+    </div>
+  </div>
+
+
+  <!-- ===================== ADMIN ===================== -->
+  <div class="screen" id="screen-admin">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Админ-панель</div>
+    </div>
+    <div class="screen-scroll">
+      <div id="adminLockGate" class="admin-lock-card glass r24">
+        <div class="lock-icon">🛡️</div>
+        <div class="font-display" style="font-size:18px;font-weight:800;">Доступ администратора</div>
+        <p class="hint-text" style="margin-top:8px;">Введите пароль для управления платформой</p>
+        <div class="field glass r20"><input type="password" id="adminPassInput" placeholder="Пароль" autocomplete="off" aria-label="Пароль админа" onkeydown="if(event.key==='Enter')tryUnlockAdmin()"></div>
+        <div class="auth-error" id="adminPassError"></div>
+        <button type="button" class="gradient-btn full-btn r20" style="margin-top:16px;" onclick="tryUnlockAdmin()">Войти</button>
+      </div>
+
+      <div id="adminPanelContent" style="display:none;">
+        <div class="admin-stats" id="adminStats">
+          <div class="admin-stat"><div class="num" id="admStatUsers">0</div><div class="lbl">Пользователи</div></div>
+          <div class="admin-stat"><div class="num" id="admStatChats">0</div><div class="lbl">Чаты</div></div>
+          <div class="admin-stat"><div class="num" id="admStatMsgs">0</div><div class="lbl">Сообщения</div></div>
+          <div class="admin-stat"><div class="num" id="admStatCoins">0</div><div class="lbl">Ваши CC</div></div>
+        </div>
+
+        <div class="admin-tabs" role="tablist">
+          <button type="button" class="admin-tab active" data-tab="users" onclick="switchAdminTab('users')">Юзеры</button>
+          <button type="button" class="admin-tab" data-tab="economy" onclick="switchAdminTab('economy')">Экономика</button>
+          <button type="button" class="admin-tab" data-tab="security" onclick="switchAdminTab('security')">Защита</button>
+          <button type="button" class="admin-tab" data-tab="system" onclick="switchAdminTab('system')">Система</button>
+        </div>
+
+        <!-- USERS TAB -->
+        <div class="admin-pane active" id="adminPaneUsers">
+          <div class="admin-card glass r20">
+            <div class="section-label" style="margin:0 0 8px;">Поиск пользователя</div>
+            <div class="field glass r20" style="margin-top:0;"><input type="text" id="adminUserQuery" placeholder="@username или email" oninput="adminSearchUser()" aria-label="Поиск пользователя"></div>
+            <div id="adminUserResult" style="margin-top:10px;"></div>
+          </div>
+          <div class="admin-user-card" id="adminActions" style="display:none;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+              <div class="avatar av-g2" id="adminTargetAvatar" style="width:48px;height:48px;font-size:16px;">?</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;" id="adminTargetLabel">@user</div>
+                <div class="hint-text" id="adminTargetMeta">—</div>
+              </div>
+            </div>
+            <div class="field glass r20"><input type="number" id="adminCoinAmount" placeholder="CC (+/−)" inputmode="numeric"></div>
+            <div class="field glass r20"><input type="number" id="adminStarAmount" placeholder="Звёзды (+/−)" inputmode="numeric"></div>
+            <div class="admin-action-grid">
+              <button class="gradient-btn" onclick="adminGiveCoins()">Монеты</button>
+              <button class="gradient-btn" style="background:linear-gradient(135deg,#F59E0B,#EAB308);color:#1a1200;" onclick="adminGiveStars()">Звёзды</button>
+              <button class="glass" style="color:var(--text);border:1px solid var(--border);" onclick="adminToggleVerified()">Галочка ✓</button>
+              <button class="glass" style="color:var(--text);border:1px solid var(--border);" onclick="adminGivePremium(30)">PRO 30д</button>
+              <button class="glass" style="color:var(--text);border:1px solid var(--border);" onclick="adminGivePremium(365)">PRO год</button>
+              <button class="glass" style="color:var(--danger);border:1px solid var(--border);" onclick="adminRevokePremium()">Снять PRO</button>
+              <button class="glass" style="color:var(--text);border:1px solid var(--border);" onclick="adminToggleAdmin()">Права админа</button>
+              <button class="glass" style="color:var(--danger);border:1px solid rgba(239,68,68,0.4);grid-column:1/-1;" onclick="adminBlockUser(true)">🚫 Заблокировать</button>
+              <button class="glass" style="color:var(--text);border:1px solid var(--border);grid-column:1/-1;" onclick="adminBlockUser(false)">✅ Разблокировать</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ECONOMY TAB -->
+        <div class="admin-pane" id="adminPaneEconomy">
+          <div class="section-label">Быстрая выдача себе</div>
+          <div class="admin-quick-grid">
+            <button type="button" class="admin-quick-btn" onclick="adminSelfCoins(100)"><span class="qi">🪙</span>+100 CC</button>
+            <button type="button" class="admin-quick-btn" onclick="adminSelfCoins(500)"><span class="qi">💰</span>+500 CC</button>
+            <button type="button" class="admin-quick-btn" onclick="adminSelfCoins(2500)"><span class="qi">💎</span>+2500 CC</button>
+            <button type="button" class="admin-quick-btn" onclick="adminSelfStars(5)"><span class="qi">⭐</span>+5 ★</button>
+            <button type="button" class="admin-quick-btn" onclick="adminSelfStars(25)"><span class="qi">✨</span>+25 ★</button>
+            <button type="button" class="admin-quick-btn" onclick="adminSelfPremium(30)"><span class="qi">👑</span>PRO 30д</button>
+          </div>
+          <div class="admin-card glass r20" style="margin-top:14px;">
+            <div class="section-label" style="margin:0 0 8px;">Массовая экономика</div>
+            <button type="button" class="gradient-btn full-btn r20" style="height:48px;" onclick="adminGrantAllCoins(50)">Всем аккаунтам +50 CC</button>
+            <button type="button" class="glass full-btn r20" style="margin-top:10px;height:48px;font-weight:700;color:var(--text);" onclick="adminResetOwnCoins()">Обнулить свои CC</button>
+          </div>
+        </div>
+
+        <!-- SECURITY TAB -->
+        <div class="admin-pane" id="adminPaneSecurity">
+          <div class="admin-stats" style="margin-bottom:12px;">
+            <div class="admin-stat"><div class="num" id="admSecBlocked">0</div><div class="lbl">Блок. запросов</div></div>
+            <div class="admin-stat"><div class="num" id="admSecRate">0</div><div class="lbl">Rate-limit</div></div>
+            <div class="admin-stat"><div class="num" id="admSecWs">0</div><div class="lbl">WS онлайн</div></div>
+            <div class="admin-stat"><div class="num" id="admSecUptime">0</div><div class="lbl">Аптайм, с</div></div>
+          </div>
+          <div class="admin-card glass r20">
+            <div class="section-label" style="margin:0 0 8px;">Анти-DDoS</div>
+            <div class="hint-text" style="margin-bottom:10px;">Лимиты: OTP 5 / 10 мин · API 180 / мин · WS ≤8 на IP</div>
+            <div class="info-card glass r20" style="margin-top:0;"><div class="k">Забаненные IP</div><div class="v" id="admBannedIpsCount">0</div></div>
+            <div id="admBannedIpsList" class="hint-text" style="margin-top:8px;word-break:break-all;">—</div>
+            <div class="field glass r20" style="margin-top:12px;"><input type="text" id="adminBanIpInput" placeholder="IP для бана" aria-label="IP"></div>
+            <div class="admin-action-grid" style="margin-top:10px;">
+              <button class="gradient-btn" style="background:linear-gradient(135deg,#EF4444,#DC2626);" onclick="adminBanIp()">Бан IP</button>
+              <button class="glass" style="color:var(--text);border:1px solid var(--border);" onclick="adminUnbanIp()">Снять бан</button>
+            </div>
+            <button type="button" class="glass full-btn r20" style="margin-top:12px;height:44px;font-weight:700;color:var(--text);" onclick="adminClearRateLimits()">Сбросить rate-limit</button>
+            <button type="button" class="glass full-btn r20" style="margin-top:8px;height:44px;font-weight:700;color:var(--text);" onclick="loadAdminSecurityStats()">Обновить защиту</button>
+          </div>
+        </div>
+
+        <!-- SYSTEM TAB -->
+        <div class="admin-pane" id="adminPaneSystem">
+          <div class="admin-card glass r20">
+            <div class="section-label" style="margin:0 0 8px;">Система</div>
+            <div class="info-card glass r20" style="margin-top:0;"><div class="k">Сессия админа</div><div class="v">Активна</div></div>
+            <div class="info-card glass r20"><div class="k">Локальные аккаунты</div><div class="v" id="admAccCount">0</div></div>
+            <div class="info-card glass r20"><div class="k">IndexedDB</div><div class="v" id="admDbStatus">—</div></div>
+            <div class="info-card glass r20"><div class="k">Сервер</div><div class="v" id="admServerStatus">—</div></div>
+            <button type="button" class="glass full-btn r20" style="margin-top:12px;height:48px;font-weight:700;color:var(--text);" onclick="renderAdminStats();loadAdminSecurityStats();showToast('Статистика обновлена')">Обновить статистику</button>
+            <button type="button" class="glass full-btn r20" style="margin-top:10px;height:48px;font-weight:700;color:var(--text);" onclick="exportChats()">Экспорт данных</button>
+            <button type="button" class="gradient-btn full-btn r20" style="margin-top:10px;height:48px;background:linear-gradient(135deg,#EF4444,#DC2626);" onclick="lockAdminPanel()">Выйти из админ-панели</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PRIVACY & SECURITY ===================== -->
+  <div class="screen" id="screen-privacy">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Конфиденциальность</div>
+    </div>
+    <div class="screen-scroll">
+
+      <div class="section-label">Информация об аккаунте</div>
+
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+        <div style="flex:1;">
+          <div class="label">Email</div>
+          <div class="hint-text" id="privacyEmail" style="margin-top:4px;">—</div>
+        </div>
+      </div>
+
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div style="flex:1;">
+          <div class="label">Username</div>
+          <div class="hint-text" id="privacyUsername" style="margin-top:4px;">—</div>
+        </div>
+      </div>
+
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div style="flex:1;">
+          <div class="label">Дата регистрации</div>
+          <div class="hint-text" id="privacyCreatedAt" style="margin-top:4px;">—</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:24px;">Изменить email</div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:8px;">На новый email будет отправлен код подтверждения</div>
+
+      <div class="field glass r20" style="margin-bottom:12px;">
+        <input type="email" id="newEmailInput" placeholder="Новый email" autocomplete="email">
+      </div>
+      <button type="button" class="gradient-btn full-btn r20" style="height:48px;" onclick="changeEmail()">Изменить email</button>
+
+      <div class="section-label" style="margin-top:24px;">Облачный пароль (опционально)</div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:8px;">Для дополнительной защиты аккаунта установите пароль</div>
+
+      <div class="field glass r20" style="margin-bottom:12px;">
+        <input type="password" id="cloudPasswordInput" placeholder="Новый пароль (мин. 8 символов)" autocomplete="new-password">
+      </div>
+      <div class="field glass r20" style="margin-bottom:12px;">
+        <input type="password" id="cloudPasswordConfirm" placeholder="Подтвердите пароль" autocomplete="new-password">
+      </div>
+      <button type="button" class="gradient-btn full-btn r20" style="height:48px;" onclick="setCloudPassword()">Установить пароль</button>
+
+      <div class="section-label" style="margin-top:24px;">Безопасность</div>
+
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="label">Сквозное шифрование (E2EE)</div>
+        <div style="color:var(--success);font-size:20px;">✓</div>
+      </div>
+
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <div style="flex:1;">
+          <div class="label">Публичный ключ</div>
+          <div class="hint-text" id="privacyPublicKey" style="margin-top:4px;font-size:11px;word-break:break-all;">—</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:24px;">Видимость</div>
+      <div class="section-row glass r20">
+        <div class="label" style="flex:1;">Показывать «в сети»</div>
+        <label class="switch"><input type="checkbox" id="privOnline" onchange="ChiperPrivacy&&ChiperPrivacy.savePrivacyForm()"><span class="slider"></span></label>
+      </div>
+      <div class="section-row glass r20">
+        <div class="label" style="flex:1;">Показывать last seen</div>
+        <label class="switch"><input type="checkbox" id="privLastSeen" onchange="ChiperPrivacy&&ChiperPrivacy.savePrivacyForm()"><span class="slider"></span></label>
+      </div>
+      <div class="section-row glass r20">
+        <div class="label" style="flex:1;">Отчёты о прочтении</div>
+        <label class="switch"><input type="checkbox" id="privReadReceipts" onchange="ChiperPrivacy&&ChiperPrivacy.savePrivacyForm()"><span class="slider"></span></label>
+      </div>
+      <div class="section-row glass r20" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div class="label">Кто может писать</div>
+        <select id="privWhoMessage" class="glass r16" style="padding:10px;border:none;color:inherit;background:transparent;" onchange="ChiperPrivacy&&ChiperPrivacy.savePrivacyForm()">
+          <option value="everyone">Все</option>
+          <option value="contacts">Только контакты</option>
+        </select>
+      </div>
+      <div class="hint-text" style="padding:8px 4px 16px;">Группы и каналы не используют E2EE — только личные чаты.</div>
+
+      <div class="section-label" style="margin-top:24px;">Опасная зона</div>
+
+      <button type="button" class="glass full-btn r20" style="height:48px;color:var(--danger);font-weight:700;margin-bottom:12px;" onclick="confirmDeleteAccount()">Удалить аккаунт</button>
+
+      <div style="height:24px;"></div>
+    </div>
+  </div>
+
+  <!-- ===================== PREMIUM ===================== -->
+  <div class="screen" id="screen-premium">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Chiper Premium</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="premium-hero glass">
+        <div class="crown">👑</div>
+        <h2 id="premiumTitle">Chiper Premium</h2>
+        <p id="premiumSub">Больше свободы в профиле, каналах и чатах</p>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Анимированный аватар</div><div class="pf-desc">Видео-аватар (mp4/webm) вместо статичного фото</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Цвет профиля и обложки</div><div class="pf-desc">Кастомные градиенты и уникальный цвет профиля</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Статус + бейдж PRO</div><div class="pf-desc">Кастомный статус как в Discord и золотой бейдж</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Эксклюзивные темы</div><div class="pf-desc">Доп. акценты, gold-тема и премиум-эффекты</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Медиа до 25 МБ</div><div class="pf-desc">Большие файлы, фото и голосовые без ограничений</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="pf-text"><div class="pf-title">10 стилей пузырьков</div><div class="pf-desc">Меняйте оформление исходящих сообщений: закат, неон, стекло и др.</div></div>
+        </div>
+      </div>
+
+      <div id="premiumActiveBox" style="display:none;margin-top:16px;">
+        <div class="info-card glass r20">
+          <div class="k">Статус</div>
+          <div class="v">Premium активен <span class="premium-badge">PRO</span></div>
+        </div>
+        <div class="info-card glass r20">
+          <div class="k">Действует до</div>
+          <div class="v" id="premiumUntilLabel">—</div>
+        </div>
+        <div class="field glass r20" style="margin-top:12px;">
+          <input type="text" id="premiumCustomStatus" placeholder="Кастомный статус (как в Discord)" maxlength="40" onchange="savePremiumCustomStatus()">
+        </div>
+        <div class="section-label">Цвет профиля</div>
+        <div class="accent-swatches" style="padding:0 4px;">
+          <div class="swatch" style="background:linear-gradient(135deg,#7C3AED,#A855F7)" data-pc="purple" onclick="setProfileColor('purple')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#2563EB,#3B82F6)" data-pc="blue" onclick="setProfileColor('blue')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#DB2777,#EC4899)" data-pc="pink" onclick="setProfileColor('pink')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#0D9488,#14B8A6)" data-pc="teal" onclick="setProfileColor('teal')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#EA580C,#F97316)" data-pc="orange" onclick="setProfileColor('orange')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#F59E0B,#EAB308)" data-pc="gold" onclick="setProfileColor('gold')"></div>
+        </div>
+        <button class="glass full-btn r20" style="margin-top:16px;height:48px;font-weight:700;color:var(--danger);" onclick="cancelPremium()">Отменить Premium</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Тарифы</div>
+      <div class="price-row">
+        <div class="price-card active" data-plan="month" onclick="selectPremiumPlan('month')">
+          <div class="price">299 CC</div>
+          <div class="period">1 месяц</div>
+        </div>
+        <div class="price-card" data-plan="year" onclick="selectPremiumPlan('year')">
+          <div class="price">999 CC</div>
+          <div class="period">1 год</div>
+        </div>
+      </div>
+      <button class="gradient-btn full-btn r20" style="margin-top:18px;height:48px;" id="buyPremiumBtn" onclick="buyPremiumWithCoins()">Купить за CC</button>
+      <p class="hint-text" style="margin-top:10px;padding:0 8px;">Оплатите Premium Chiper Coin. Пополните баланс на странице Chiper Coin.</p>
+      <div class="section-label" style="margin-top:18px;">Лимиты Free vs Premium</div>
+      <div class="limit-card glass r20">
+        <div><b class="limit-free">Free:</b> файлы до 8 МБ · 3 канала · статичный аватар</div>
+        <div style="margin-top:6px;"><b class="limit-pro">Premium:</b> файлы до 25 МБ · без лимита каналов · видео-аватар · PRO-бейдж</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COINS ===================== -->
+  <div class="screen" id="screen-coins">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Chiper Coin</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="coins-hero glass">
+        <div class="coin-icon">CC</div>
+        <div class="balance-num" id="coinsBalanceBig">0</div>
+        <div class="balance-label">Chiper Coin на балансе</div>
+        <div class="hint-text" id="coinsPremiumCostHint" style="margin-top:10px;padding:0 8px;">299 CC / мес</div>
+      </div>
+      <div class="section-label" style="margin-top:18px;">Пакеты Chiper Coin</div>
+      <div class="coin-pack-grid">
+        <div class="coin-pack glass r20" onclick="buyCoinPack(50,0,this)">
+          <div class="pack-amount">50</div>
+          <div class="pack-price">59 ₽</div>
+        </div>
+        <div class="coin-pack glass r20" onclick="buyCoinPack(100,0,this)">
+          <div class="pack-amount">100</div>
+          <div class="pack-price">149 ₽</div>
+        </div>
+        <div class="coin-pack glass r20 popular" onclick="buyCoinPack(250,0,this)">
+          <div class="pack-badge">Хит</div>
+          <div class="pack-amount">250</div>
+          <div class="pack-price">359 ₽</div>
+        </div>
+        <div class="coin-pack glass r20" onclick="buyCoinPack(500,0,this)">
+          <div class="pack-amount">500</div>
+          <div class="pack-price">719 ₽</div>
+        </div>
+        <div class="coin-pack glass r20" onclick="buyCoinPack(700,0,this)">
+          <div class="pack-amount">700</div>
+          <div class="pack-price">999 ₽</div>
+        </div>
+        <div class="coin-pack glass r20" onclick="buyCoinPack(1000,0,this)">
+          <div class="pack-amount">1000</div>
+          <div class="pack-price">1399 ₽</div>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:18px;">История операций</div>
+      <div id="coinTxList"></div>
+    </div>
+  </div>
+
+  <!-- ===================== NEW CHAT ===================== -->
+  <div class="screen" id="screen-newchat">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Новый чат</div>
+    </div>
+    <div class="screen-scroll" style="padding-top:0;">
+      <div class="new-tabs">
+        <button class="new-tab active" id="tabUsers" onclick="switchNewTab('users')">Пользователи</button>
+        <button class="new-tab" id="tabGroup" onclick="switchNewTab('group')">Группа</button>
+        <button class="new-tab" id="tabChannel" onclick="switchNewTab('channel')">Канал</button>
+      </div>
+      <div id="newUsersPane">
+        <div class="search-bar glass r24">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="contactSearch" placeholder="Поиск по @username" oninput="debouncedSearchUsers()" aria-label="Поиск по username">
+        </div>
+        <div class="section-label">Результаты</div>
+        <div id="contactList"></div>
+      </div>
+      <div id="newGroupPane" style="display:none;">
+        <div class="wizard-steps" id="groupWizardSteps" style="display:flex;gap:6px;padding:8px 4px 12px;">
+          <div class="wiz-dot active" data-step="1"></div><div class="wiz-dot" data-step="2"></div><div class="wiz-dot" data-step="3"></div>
+        </div>
+        <div class="create-group-card glass r22" id="groupStep1">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">1 · Название группы</div>
+          <div class="hint-text">Как в Telegram: сначала название и фото, потом участники</div>
+          <div style="display:flex;justify-content:center;margin:12px 0;">
+            <div class="avatar av-g3 pressable" id="groupAvatarPreview" style="width:72px;height:72px;font-size:24px;" onclick="document.getElementById('groupAvatarFile').click()">Г</div>
+            <input type="file" id="groupAvatarFile" accept="image/*" style="display:none" onchange="previewGroupAvatar(this)">
+          </div>
+          <div class="field glass r20"><input type="text" id="groupName" placeholder="Название группы" maxlength="60" oninput="document.getElementById('groupAvatarPreview').textContent=(this.value||'Г').slice(0,2).toUpperCase()"></div>
+          <div class="field glass r20" style="height:auto;padding:14px 18px;">
+            <textarea id="groupDesc" rows="2" placeholder="Описание (необязательно)" style="font-family:Inter,sans-serif;font-size:14px;width:100%;background:transparent;border:none;color:var(--text);outline:none;resize:none;"></textarea>
+          </div>
+          <button class="gradient-btn full-btn r20" style="margin-top:8px;" onclick="groupWizardNext(2)">Далее</button>
+        </div>
+        <div class="create-group-card glass r22" id="groupStep2" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">2 · Участники</div>
+          <div class="hint-text">Добавьте людей по @username (можно пропустить)</div>
+          <div class="field glass r20">
+            <input type="text" id="groupUserInput" placeholder="Добавить @username и Enter" maxlength="40"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addGroupMember();}">
+          </div>
+          <div class="member-chips" id="groupMemberChips"></div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="groupWizardNext(1)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="groupWizardNext(3)">Далее</button>
+          </div>
+        </div>
+        <div class="create-group-card glass r22" id="groupStep3" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">3 · Готово</div>
+          <div class="hint-text">Проверьте данные и создайте группу</div>
+          <div class="info-card glass r20" style="margin-top:8px;"><div class="k">Название</div><div class="v" id="groupConfirmName">—</div></div>
+          <div class="info-card glass r20"><div class="k">Участников</div><div class="v" id="groupConfirmMembers">1</div></div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="groupWizardNext(2)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="createGroupOrChannel('group')">Создать</button>
+          </div>
+        </div>
+      </div>
+      <div id="newChannelPane" style="display:none;">
+        <div class="wizard-steps" style="display:flex;gap:6px;padding:8px 4px 12px;">
+          <div class="wiz-dot active" id="chDot1"></div><div class="wiz-dot" id="chDot2"></div><div class="wiz-dot" id="chDot3"></div>
+        </div>
+        <div class="create-group-card glass r22" id="channelStep1">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">1 · Название и handle</div>
+          <div class="hint-text">Канал — публичная лента. Подписчики только читают</div>
+          <div style="display:flex;justify-content:center;margin:12px 0;">
+            <div class="avatar av-g4 pressable" id="channelAvatarPreview" style="width:72px;height:72px;font-size:24px;" onclick="document.getElementById('channelAvatarFile').click()">К</div>
+            <input type="file" id="channelAvatarFile" accept="image/*" style="display:none" onchange="previewChannelAvatar(this)">
+          </div>
+          <div class="field glass r20"><input type="text" id="channelName" placeholder="Название канала" maxlength="60" oninput="document.getElementById('channelAvatarPreview').textContent=(this.value||'К').slice(0,2).toUpperCase()"></div>
+          <div class="field glass r20"><input type="text" id="channelHandle" placeholder="@channel_handle" maxlength="32"></div>
+          <button class="gradient-btn full-btn r20" style="margin-top:8px;" onclick="channelWizardNext(2)">Далее</button>
+        </div>
+        <div class="create-group-card glass r22" id="channelStep2" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">2 · Описание</div>
+          <div class="hint-text">Расскажите, о чём канал</div>
+          <div class="field glass r20" style="height:auto;padding:14px 18px;">
+            <textarea id="channelDesc" rows="4" placeholder="Описание канала" style="font-family:Inter,sans-serif;font-size:14px;width:100%;background:transparent;border:none;color:var(--text);outline:none;resize:none;"></textarea>
+          </div>
+          <div class="section-label">Тип</div>
+          <div class="section-row glass r20" style="margin-top:0;">
+            <div class="label" style="flex:1;">Публичный канал</div>
+            <div class="toggle on" id="channelPublicToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="channelWizardNext(1)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="channelWizardNext(3)">Далее</button>
+          </div>
+        </div>
+        <div class="create-group-card glass r22" id="channelStep3" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">3 · Создать канал</div>
+          <div class="info-card glass r20" style="margin-top:8px;"><div class="k">Название</div><div class="v" id="channelConfirmName">—</div></div>
+          <div class="info-card glass r20"><div class="k">Handle</div><div class="v" id="channelConfirmHandle">—</div></div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="channelWizardNext(2)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="createGroupOrChannel('channel')">Создать канал</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===================== ARCHIVE ===================== -->
+  <div class="screen" id="screen-archive">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Архив</div>
+    </div>
+    <div class="screen-scroll" style="padding-top:0;" id="archiveList"></div>
+  </div>
+
+  <!-- ===================== PROFILE (own, editable) ===================== -->
+  <div class="screen" id="screen-profile">
+    <div class="screen-scroll profile-scroll" style="padding-top:0; padding-bottom:100px;">
+      <div class="profile-top-actions">
+        <button class="icon-btn pressable" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <div class="profile-top-right">
+          <button class="icon-btn pressable sparkle-btn" onclick="rippleFx(event); go('premium')" aria-label="Premium" title="Premium">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.8 5.6 21.2 8 14 2 9.2h7.6z"/></svg>
+          </button>
+          <button class="icon-btn pressable" onclick="rippleFx(event); toggleDrawer()" aria-label="Меню">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="profile-hero">
+        <div class="avatar big-avatar av-g3 pressable" id="bigAvatar" onclick="openAvatarViewer()" role="button" tabindex="0" aria-label="Аватар">?</div>
+        <input type="file" id="avatarFile" accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none" onchange="handleImageUpload(this,'avatar')">
+        <input type="file" id="bannerFile" accept="image/*" style="display:none" onchange="handleImageUpload(this,'banner')">
+
+        <div class="profile-name" id="profileNameView">Пользователь</div>
+        <div class="profile-online-pill" id="infoPresence">
+          <span class="online-shield">🛡</span> в сети
+        </div>
+      </div>
+
+      <div class="profile-action-row">
+        <button type="button" class="prof-action-btn pressable" onclick="rippleFx(event); document.getElementById('avatarFile').click()">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Выбрать фото</span>
+        </button>
+        <button type="button" class="prof-action-btn pressable" id="editToggleBtn" onclick="event.stopPropagation(); go('profile-edit')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span>Изменить</span>
+        </button>
+        <button type="button" class="prof-action-btn pressable" onclick="rippleFx(event); go('settings')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Настройки</span>
+        </button>
+      </div>
+
+      <div class="profile-music-card" id="profileMusicCard" style="display:none;">
+        <div class="pmc-cover" id="pmcCover"></div>
+        <div class="pmc-info">
+          <div class="pmc-title" id="pmcTitle">—</div>
+          <div class="pmc-artist" id="pmcArtist">—</div>
+          <div class="pmc-album" id="pmcAlbum">—</div>
+        </div>
+      </div>
+
+      <div class="profile-info-block glass r22">
+        <div class="pib-row" id="infoPhoneRow" style="display:none;">
+          <div>
+            <div class="pib-value" id="infoPhone">—</div>
+            <div class="pib-label">Телефон</div>
+          </div>
+        </div>
+        <div class="pib-row">
+          <div>
+            <div class="pib-value" id="profileUserView">@user</div>
+            <div class="pib-label">Имя пользователя</div>
+          </div>
+        </div>
+        <div class="pib-row" id="infoCityCard" style="display:none;">
+          <div>
+            <div class="pib-value" id="infoCity">—</div>
+            <div class="pib-label" id="infoLogin">—</div>
+          </div>
+          <svg class="pib-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <div class="pib-row" id="infoBirthdayCard" style="display:none;">
+          <div>
+            <div class="pib-value" id="infoBirthday">—</div>
+            <div class="pib-label">День рождения</div>
+          </div>
+        </div>
+        <div class="pib-row" id="profileBioRow">
+          <div>
+            <div class="pib-value" id="profileBioView" style="font-weight:500;font-size:14px;">Привет! Я в Chiper 👋</div>
+            <div class="pib-label">О себе</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-tabs" id="profileTabs">
+        <button class="ptab active" data-ptab="posts" onclick="setProfileTab('posts', this)">Публикации</button>
+        <button class="ptab" data-ptab="archive" onclick="setProfileTab('archive', this)">Архив публикаций</button>
+        <button class="ptab" data-ptab="gifts" onclick="setProfileTab('gifts', this)">Подарки</button>
+      </div>
+      <div class="profile-tab-content" id="profileTabContent">
+        <div class="empty-state" style="padding:28px 12px;">
+          <div class="emoji">📭</div>
+          <div class="title">Пока пусто</div>
+          <div class="desc">Публикации появятся здесь</div>
+        </div>
+      </div>
+
+      <div id="profileExtraInfo" style="display:none;"></div>
+      <div class="stats-row" style="display:none;">
+        <div class="stat-card glass r20"><div class="num" id="statChats">0</div><div class="lbl">Чатов</div></div>
+        <div class="stat-card glass r20"><div class="num" id="statMedia">0</div><div class="lbl">Медиа</div></div>
+        <div class="stat-card glass r20"><div class="num" id="statGroups">0</div><div class="lbl">Групп</div></div>
+      </div>
+      <div id="profileBanner" style="display:none;"></div>
+      <div id="profileHead" style="display:none;"></div>
+      <div id="viewMode" style="display:none;"></div>
+    </div>
+
+    <div class="bottom-nav glass" data-nav="profile">
+      <div class="nav-bubble"></div>
+      <button class="nav-item" data-nav-idx="0" onclick="go('chats'); moveNavBubble(this)" aria-label="Чаты">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Чаты</span>
+      </button>
+      <button class="nav-item" data-nav-idx="1" onclick="go('settings'); moveNavBubble(this)" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+      <button class="nav-item active" data-nav-idx="2" onclick="go('profile'); moveNavBubble(this)" aria-label="Профиль">
+        <div class="nav-avatar avatar av-g3" style="width:26px;height:26px;font-size:11px;">?</div>
+        <span>Профиль</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== PROFILE EDIT ===================== -->
+  <div class="screen" id="screen-profile-edit">
+    <div class="topbar" style="position:relative;z-index:5;">
+      <button type="button" class="icon-btn pressable r20" onclick="event.stopPropagation(); go('profile')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:18px; font-weight:700; flex:1;">Редактирование</div>
+      <button type="button" class="gradient-btn pressable" style="height:36px;padding:0 14px;border-radius:12px;font-size:13px;position:relative;z-index:5;" onclick="event.stopPropagation(); saveProfileEdit()">Сохранить</button>
+    </div>
+    <div class="screen-scroll" style="padding-bottom:40px;">
+      <div class="section-label">Основное</div>
+      <div class="field glass r20"><input id="editName" type="text" placeholder="Имя" aria-label="Имя" maxlength="40"></div>
+      <div class="field glass r20"><input id="editUser" type="text" placeholder="@username" aria-label="Username" maxlength="32"></div>
+      <div class="field glass r20" style="height:auto; padding:14px 18px;">
+        <textarea id="editBio" rows="3" placeholder="О себе" style="font-family:'Inter',sans-serif; font-size:15px; width:100%; background:transparent; border:none; color:var(--text); outline:none; resize:none;" aria-label="О себе"></textarea>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Личные данные</div>
+      <div class="field glass r20">
+        <input id="editBirthday" type="date" aria-label="Дата рождения" style="color-scheme:dark;">
+      </div>
+      <div class="hint-text" style="padding:0 4px;">Дата рождения видна только вам (или по настройке приватности)</div>
+      <div class="field glass r20"><input id="editCity" type="text" placeholder="Город" aria-label="Город" maxlength="60"></div>
+      <div class="field glass r20"><input id="editPhone" type="tel" placeholder="Телефон (необязательно)" aria-label="Телефон" maxlength="20"></div>
+      <div class="field glass r20" style="height:auto;padding:10px 18px; flex-direction:column; align-items:stretch; gap:6px;">
+        <label style="font-size:12px;color:var(--text-secondary);">Пол</label>
+        <select id="editGender" style="background:transparent;border:none;outline:none;color:var(--text);font-size:15px;font-family:Inter,sans-serif;width:100%;">
+          <option value="">Не указан</option>
+          <option value="male">Мужской</option>
+          <option value="female">Женский</option>
+          <option value="other">Другой</option>
+        </select>
+      </div>
+      <div class="field glass r20"><input id="editWebsite" type="url" placeholder="Сайт / ссылка" aria-label="Сайт" maxlength="120"></div>
+
+      <div class="auth-error" id="profileEditError"></div>
+      <button type="button" class="gradient-btn full-btn r20 pressable" style="margin-top:24px;position:relative;z-index:5;" onclick="event.stopPropagation(); saveProfileEdit()">Сохранить изменения</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-userinfo">
+    <div class="screen-scroll" style="padding-top:0;">
+      <div class="banner r28" id="userinfoBanner" style="border-radius:0 0 28px 28px;">
+        <button class="back icon-btn glass r20 pressable" onclick="rippleFx(event); go('chat')" aria-label="Назад">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="profile-head">
+        <div class="avatar big-avatar av-g1" id="userinfoAvatar">?</div>
+        <div class="profile-name" id="userinfoName">Пользователь</div>
+        <div class="profile-username" id="userinfoUser">@user</div>
+        <div class="profile-bio" id="userinfoBio">—</div>
+
+        <!-- User actions -->
+        <div class="profile-actions" id="userinfoActionsUser">
+          <button class="gradient-btn pressable" onclick="go('chat')">Написать</button>
+          <button class="glass r18 pressable" id="userinfoCallBtn" style="height:46px; display:flex; align-items:center; justify-content:center;" onclick="startCall(false)" aria-label="Позвонить">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </button>
+          <button class="glass r18 pressable" id="userinfoVideoBtn" style="height:46px; display:flex; align-items:center; justify-content:center;" onclick="startCall(true)" aria-label="Видеозвонок">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </button>
+        </div>
+
+        <!-- Channel actions -->
+        <div class="profile-actions" id="userinfoActionsChannel" style="display:none;">
+          <button class="gradient-btn pressable" id="subscribeBtn" onclick="toggleSubscribe()" style="flex:2;">Подписаться</button>
+          <button class="glass r18 pressable" style="height:46px;flex:1;display:flex;align-items:center;justify-content:center;" onclick="go('chat')" aria-label="Открыть">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+
+        <!-- Group actions -->
+        <div class="profile-actions" id="userinfoActionsGroup" style="display:none;">
+          <button class="gradient-btn pressable" id="joinGroupBtn" onclick="toggleJoinGroup()" style="flex:2;">Войти в группу</button>
+          <button class="glass r18 pressable" style="height:46px;flex:1;display:flex;align-items:center;justify-content:center;" onclick="go('chat')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+
+        <div class="stats-row" id="userinfoStats">
+          <div class="stat-card glass r20"><div class="num" id="userinfoChats">0</div><div class="lbl" id="userinfoStat1Lbl">Общих</div></div>
+          <div class="stat-card glass r20"><div class="num" id="userinfoMedia">0</div><div class="lbl" id="userinfoStat2Lbl">Медиа</div></div>
+          <div class="stat-card glass r20"><div class="num" id="userinfoSince">—</div><div class="lbl" id="userinfoStat3Lbl">В Chiper</div></div>
+        </div>
+
+        <div id="userinfoUserCards">
+          <div class="info-card glass r20"><div class="k">Логин</div><div class="v" id="userinfoLogin">@user</div></div>
+          <div class="info-card glass r20"><div class="k">На связи</div><div class="v" id="userinfoOnline">—</div></div>
+        </div>
+
+        <div id="userinfoChannelCards" style="display:none;">
+          <div class="info-card glass r20"><div class="k">Тип</div><div class="v">Публичный канал</div></div>
+          <div class="info-card glass r20"><div class="k">Подписчики</div><div class="v" id="channelSubsCount">1</div></div>
+          <div class="info-card glass r20"><div class="k">Handle</div><div class="v" id="channelHandleView">@channel</div></div>
+        </div>
+
+        <div id="userinfoGroupCards" style="display:none;">
+          <div class="info-card glass r20"><div class="k">Тип</div><div class="v">Группа</div></div>
+          <div class="info-card glass r20"><div class="k">Участников</div><div class="v" id="groupMembersCount">1</div></div>
+        </div>
+
+        <div class="section-label" id="membersSectionLabel" style="display:none;">Участники</div>
+        <div id="membersList" style="display:none;"></div>
+
+        <div class="section-label" id="userinfoMediaLabel">Общие медиа</div>
+        <div class="media-grid" id="userinfoMediaGrid"></div>
+
+        <div class="section-row glass r20 pressable" id="userinfoBlockRow" style="margin-top:16px; margin-bottom:20px;" role="button" tabindex="0">
+          <div class="icon-wrap" style="background:rgba(239,68,68,0.12);"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg></div>
+          <div class="label" style="color:#EF4444;" id="userinfoDangerLabel">Заблокировать</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+  <!-- Bottom sheet -->
+  <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+  <div class="bottom-sheet" id="bottomSheet" role="dialog" aria-label="Действия">
+    <div class="sheet-handle"></div>
+    <div id="sheetContent"></div>
+  </div>
+  <div class="aria-live" aria-live="polite" id="ariaLive"></div>
+
+  <!-- Call overlay -->
+  <div class="call-overlay" id="callOverlay">
+    <video class="call-local-video" id="callLocalVideo" autoplay playsinline muted style="display:none"></video>
+    <video class="call-remote-video" id="callRemoteVideo" autoplay playsinline style="display:none"></video>
+    <div class="call-pulse-ring" id="callPulseRing">
+      <div class="call-avatar-fallback" id="callAvatarFallback" style="margin:0;width:100px;height:100px;font-size:36px;">?</div>
+    </div>
+    <div class="call-participants" id="callParticipants" style="display:none;"></div>
+  <div class="call-info">
+      <div class="name" id="callName">Звонок</div>
+      <div class="status" id="callStatus">Соединение…</div>
+    </div>
+    <div class="call-actions">
+      <button class="call-btn mute" id="callMuteBtn" onclick="toggleCallMute()" aria-label="Микрофон">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg>
+      </button>
+      <button class="call-btn speaker" id="callSpeakerBtn" onclick="toggleCallSpeaker()" aria-label="Динамик">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </button>
+      <button class="call-btn hangup" onclick="endCall()" aria-label="Завершить">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.68 13.31a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 24 20.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 6.11 4h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L10.68 13.31z" transform="rotate(135 12 12)"/></svg>
+      </button>
+      <button class="call-btn cam" id="callCamBtn" onclick="toggleCallCam()" aria-label="Камера" style="display:none">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- Avatar viewer -->
+  <div class="avatar-viewer-overlay" id="avatarViewerOverlay" onclick="if(event.target===this)closeAvatarViewer()">
+    <img class="avatar-viewer-img" id="avatarViewerImg" alt="Аватар" style="display:none">
+    <video class="avatar-viewer-img" id="avatarViewerVideo" autoplay muted loop playsinline style="display:none"></video>
+    <div class="avatar-viewer-actions">
+      <button class="gradient-btn" onclick="downloadCurrentAvatar()">Скачать</button>
+      <button class="glass" style="color:var(--text)" onclick="document.getElementById('avatarFile').click()">Заменить</button>
+      <button class="glass" style="color:var(--text)" onclick="closeAvatarViewer()">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Incoming call banner -->
+  <div class="incoming-call-banner glass" id="incomingCallBanner">
+    <div class="avatar av-g1" id="incomingCallAvatar" style="width:44px;height:44px;font-size:14px;">?</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-family:Plus Jakarta Sans,sans-serif;" id="incomingCallName">Звонок</div>
+      <div style="font-size:12px;color:var(--text-secondary);" id="incomingCallType">Входящий</div>
+    </div>
+    <div class="ica-actions">
+      <button class="ica-btn ica-reject" onclick="rejectIncomingCall()" aria-label="Отклонить">✕</button>
+      <button class="ica-btn ica-accept" onclick="acceptIncomingCall()" aria-label="Принять">✓</button>
+    </div>
+  </div>
+
+<!-- Side Drawer (outside #app so it isn't clipped) -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<aside class="drawer" id="sideDrawer" role="dialog" aria-label="Меню" aria-modal="true">
+  <div class="drawer-header">
+    <img src="logo.jpg" alt="" width="24" height="24" class="nav-brand-logo" style="position:absolute;top:16px;right:16px;border-radius:6px;opacity:0.9;">
+    <div class="avatar av-g3" id="drawerAvatar" style="width:56px;height:56px;font-size:18px;">?</div>
+    <div class="info">
+      <div class="name" id="drawerName">Пользователь</div>
+      <div class="user" id="drawerUser">@user</div>
+    </div>
+  </div>
+  <nav class="drawer-nav">
+    <button class="drawer-item" onclick="closeDrawer(); go('profile')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      Профиль
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('newchat')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+      Новый чат
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('archive')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></div>
+      Архив
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('settings')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      Настройки
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('premium')">
+      <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(234,179,8,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+      Premium
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('coins')">
+      <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(37,99,235,0.2),rgba(59,130,246,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><circle cx="12" cy="12" r="7"/><path d="M9 12h6"/><path d="M12 9v6"/></svg></div>
+      Купить CC
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); toggleTheme()">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+      Сменить тему
+    </button>
+    <button class="drawer-item danger" onclick="closeDrawer(); if(confirm('Выйти из аккаунта?')){ state.loggedIn=false; state.profile={name:'',username:'',uid:null,email:''}; state.chats={}; window._pendingReg=null; document.body.classList.remove('authed'); try{ localStorage.setItem(META_KEY, JSON.stringify({schema:SCHEMA_VERSION, loggedIn:false, profile:{}, settings:state.settings||{}, drafts:{}})); }catch(_){} go('login'); }">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></div>
+      Выйти
+    </button>
+  </nav>
+  <div class="drawer-footer">Chiper · приватные сообщения</div>
+</aside>
+
+
+<!-- Optional encrypted env (needs CryptoJS if used) -->
+<!-- env.js removed: unused fake client-side "secret" config -->
+<script src="js/core.js" defer></script>
+<script src="js/sync.js" defer></script>
+<script src="js/messages-pipeline.js" defer></script>
+<script src="js/privacy.js" defer></script>
+<script src="js/app.js" defer></script>
+<script src="js/calls-enhance.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#7C3AED">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Chiper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="data:application/json,{"name":"Chiper","short_name":"Chiper","start_url":".","display":"standalone","background_color":"#0F1015","theme_color":"#7C3AED","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%237C3AED' width='100' height='100' rx='22'/%3E%3Cpath fill='white' d='M50 22c-15.5 0-28 11.2-28 25 0 7.9 4 14.9 10.3 19.5-.25 2.4-1.4 6.2-4.45 10.3 0 0 6.55-.8 12.2-5.2 2.2.5 4.5.8 6.95.8 15.5 0 28-11.2 28-25S65.5 22 50 22z'/%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}">
+<link rel="stylesheet" href="css/main.css">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="toast glass r18" id="toast"></div>
+
+  <!-- Context menu -->
+  <div class="ctx-menu glass" id="ctxMenu" role="menu"></div>
+  <!-- Reaction picker -->
+  <div class="reaction-picker" id="reactionPicker"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 id="modalTitle">Доступ к микрофону</h3>
+      <p id="modalText">Разрешите доступ к микрофону в настройках браузера, чтобы записывать голосовые сообщения.</p>
+      <div class="modal-actions">
+        <button class="glass" style="color:var(--text)" onclick="closeModal()">Понятно</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== LOGIN ===================== -->
+  <div class="screen active" id="screen-login">
+    <div class="auth-wrap">
+      <div class="auth-logo" aria-hidden="true"><img class="brand-logo" src="assets/logo.svg" alt="Chiper" width="40" height="40"></div>
+      <div class="auth-title">Chiper</div>
+      <div class="auth-sub">Быстрые и приватные сообщения</div>
+      <div class="auth-card glass r28">
+        <button type="button" class="google-btn" type="button" onclick="event.preventDefault();event.stopPropagation();rippleFx(event);authWithGoogle('login');return false;">
+          <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Войти через Google
+        </button>
+        <div class="auth-divider">или email</div>
+        <div class="field glass r20"><input type="email" id="loginUser" placeholder="Gmail / email" autocomplete="email" aria-label="Email" onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()"></div>
+        <div class="field glass r20"><input type="password" id="loginPass" placeholder="Пароль" autocomplete="current-password" aria-label="Пароль" onkeydown="if(event.key==='Enter'){rippleFx(event); doLogin()}"></div>
+        <div class="auth-error" id="loginError"></div>
+        <button type="button" class="gradient-btn full-btn r20 pressable" id="loginBtn" type="button" onclick="event.preventDefault();event.stopPropagation();rippleFx(event);doLogin();return false;">Войти</button>
+      </div>
+      <div class="auth-link">Нет аккаунта? <b onclick="go('register')" role="button" tabindex="0">Зарегистрироваться</b></div>
+    </div>
+  </div>
+
+  <!-- ===================== REGISTER ===================== -->
+  <div class="screen" id="screen-register">
+    <div class="auth-wrap">
+      <div class="auth-logo" style="animation-delay:0.4s;" aria-hidden="true"><img class="brand-logo" src="assets/logo.svg" alt="Chiper" width="40" height="40"></div>
+      <div class="auth-title">Регистрация</div>
+      <div class="auth-sub">Через Gmail или email</div>
+      <div class="auth-card glass r28">
+        <button type="button" class="google-btn" type="button" onclick="event.preventDefault();event.stopPropagation();rippleFx(event);authWithGoogle('register');return false;">
+          <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Продолжить с Google
+        </button>
+        <div class="auth-divider">или email</div>
+        <div class="field glass r20"><input type="email" id="regEmail" placeholder="you@gmail.com" autocomplete="email" aria-label="Gmail" onkeydown="if(event.key==='Enter')document.getElementById('regPass').focus()"></div>
+        <div class="field glass r20"><input type="password" id="regPass" placeholder="Пароль (мин. 6 символов)" aria-label="Пароль" onkeydown="if(event.key==='Enter'){rippleFx(event); doRegister()}"></div>
+        <div class="auth-error" id="regError"></div>
+        <button type="button" class="gradient-btn full-btn r20 pressable" id="regBtn" type="button" onclick="event.preventDefault();event.stopPropagation();rippleFx(event);doRegister();return false;">Далее</button>
+      </div>
+      <div class="auth-link">Уже есть аккаунт? <b onclick="go('login')" role="button" tabindex="0">Войти</b></div>
+    </div>
+  </div>
+
+  <!-- ===================== ONBOARDING PROFILE ===================== -->
+  <div class="screen" id="screen-onboarding">
+    <div class="auth-wrap" style="justify-content:flex-start; padding-top:28px;">
+      <div class="auth-logo" aria-hidden="true" style="margin-bottom:12px;">
+        <img class="brand-logo" src="assets/logo.svg" alt="Chiper" width="40" height="40">
+      </div>
+      <div class="auth-title" style="font-size:22px;">Создай профиль</div>
+      <div class="auth-sub">Фото, имя и @username — так тебя увидят в Chiper</div>
+      <div class="auth-card glass r28" style="margin-top:20px;">
+        <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:12px; gap:10px;">
+          <div class="avatar av-g3 pressable" id="onboardAvatar" style="width:104px;height:104px;font-size:32px;border:3px solid color-mix(in srgb, var(--primary) 40%, transparent);" onclick="document.getElementById('onboardAvatarFile').click()" role="button" tabindex="0" aria-label="Загрузить фото">?</div>
+          <input type="file" id="onboardAvatarFile" accept="image/*" style="display:none" onchange="handleOnboardAvatar(this)">
+          <button type="button" class="glass r999 pressable" style="height:36px;padding:0 14px;font-size:13px;font-weight:600;border:none;color:var(--text);" onclick="document.getElementById('onboardAvatarFile').click()">📷 Загрузить фото</button>
+        </div>
+        <div class="field glass r20"><input type="text" id="onboardName" placeholder="Имя (как к тебе обращаться)" aria-label="Имя" maxlength="40" autocomplete="name"></div>
+        <div class="field glass r20"><input type="text" id="onboardUser" placeholder="@username" aria-label="Username" maxlength="32" autocomplete="username" oninput="this.value=this.value.replace(/[^a-zA-Z0-9._@]/g,'')"></div>
+        <div class="field glass r20" style="height:auto;padding:14px 18px;">
+          <textarea id="onboardBio" rows="2" placeholder="О себе (необязательно)" style="font-family:Inter,sans-serif;font-size:15px;width:100%;background:transparent;border:none;color:var(--text);outline:none;resize:none;" aria-label="О себе"></textarea>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);line-height:1.4;">Позицию аватарки на профиле можно будет выбрать: слева, по центру или справа.</div>
+        <div class="auth-error" id="onboardError"></div>
+        <button type="button" class="gradient-btn full-btn r20 pressable" id="onboardDoneBtn"
+          style="position:relative;z-index:20;touch-action:manipulation;"
+          onclick="event.preventDefault();event.stopPropagation();finishOnboarding();return false;">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CHATS (MAIN) ===================== -->
+  <div class="screen" id="screen-chats">
+    <div class="topbar">
+      <button class="icon-btn glass r20 pressable" id="burgerBtn" style="width:48px;height:48px;" onclick="rippleFx(event); toggleDrawer()" aria-label="Меню" aria-expanded="false">
+        <div class="burger-icon" aria-hidden="true"><span></span><span></span><span></span></div>
+      </button>
+      <img class="nav-brand-logo" src="assets/logo.svg" alt="Chiper" width="28" height="28" style="border-radius:8px;flex-shrink:0;">
+      <div class="search-bar glass r24" style="flex:1;" onclick="go('gsearch')" role="button" tabindex="0">
+        <img src="assets/search.svg" alt="" width="20" height="20" style="opacity:0.7;flex-shrink:0;" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:none;width:20px;height:20px;flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Поиск чатов…" id="chatSearch" oninput="filterList('chatSearch','#chatList .chat-row')" onclick="event.stopPropagation()" onfocus="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.preventDefault();const q=this.value.trim();go('gsearch');const g=document.getElementById('globalSearchInput');if(g){g.value=q;runGlobalSearch();}}" aria-label="Поиск чатов">
+      </div>
+      <button type="button" class="icon-btn glass r20 pressable" id="globalSearchBtn" style="width:48px;height:48px;flex-shrink:0;" onclick="rippleFx(event); go('gsearch'); setTimeout(()=>document.getElementById('globalSearchInput')?.focus(),120)" aria-label="Глобальный поиск" title="Поиск">
+        <img src="assets/search.svg" alt="Поиск" width="22" height="22" onerror="this.outerHTML='<svg viewBox=\'0 0 24 24\' width=\'22\' height=\'22\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><circle cx=\'11\' cy=\'11\' r=\'7\'/><path d=\'m21 21-4.3-4.3\'/></svg>'">
+      </button>
+    </div>
+    <div class="screen-scroll" id="chatsScroll" style="padding-top:0;">
+      <div class="ptr" id="ptr">Обновление…</div>
+      <div class="archive-card glass r22 pressable" onclick="rippleFx(event); go('archive')" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+        <div style="flex:1;"><div class="chat-name" style="font-size:16px;">Архив</div><div class="chat-last" style="margin-top:2px;" id="archiveCount">0 чатов</div></div>
+      </div>
+      <div id="chatList"></div>
+    </div>
+
+    <div class="bottom-nav glass r30" data-nav="main">
+      <div class="nav-bubble" id="navBubble"></div>
+      <button class="nav-item active" data-nav-idx="0" onclick="go('chats'); moveNavBubble(this)" aria-label="Чаты">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Чаты</span>
+      </button>
+      <button class="nav-item fab pressable" data-nav-idx="1" onclick="rippleFx(event); go('newchat'); moveNavBubble(this)" aria-label="Новый чат">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="nav-item" data-nav-idx="2" onclick="go('profile'); moveNavBubble(this)" aria-label="Профиль">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Профиль</span>
+      </button>
+      <button class="nav-item" data-nav-idx="3" onclick="go('settings'); moveNavBubble(this)" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== CHAT (conversation) ===================== -->
+  <div class="screen" id="screen-chat">
+    <div class="chat-header glass">
+      <button class="icon-btn pressable r20" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="avatar av-g1 pressable" id="chatAvatar" style="width:42px;height:42px;font-size:14px;" onclick="go('userinfo')" role="button" tabindex="0">?</div>
+      <div class="info pressable" onclick="go('userinfo')" role="button" tabindex="0">
+        <div class="name" id="chatName">Чат</div>
+        <div class="status" id="chatStatus">—</div>
+      </div>
+      <button class="icon-btn pressable r20" onclick="toggleMsgSearch()" aria-label="Поиск по сообщениям">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="icon-btn pressable r20" id="chatCallAudioBtn" onclick="startCall(false)" aria-label="Аудиозвонок" title="Аудиозвонок">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </button>
+      <button class="icon-btn pressable r20" id="chatCallVideoBtn" onclick="startCall(true)" aria-label="Видеозвонок" title="Видеозвонок">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </button>
+    </div>
+
+    <div class="search-msg-bar" id="msgSearchBar">
+      <input type="text" id="msgSearchInput" placeholder="Поиск в чате…" oninput="searchInChat()" aria-label="Поиск в чате">
+      <button class="icon-btn" onclick="toggleMsgSearch()" aria-label="Закрыть поиск">✕</button>
+    </div>
+
+    
+    <div class="pinned-bar glass" id="pinnedBar" onclick="scrollToPinned()">
+      <svg class="pin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1z"/></svg>
+      <div style="flex:1;min-width:0;">
+        <div class="pin-label">Закреплено</div>
+        <div class="pin-text" id="pinnedText">—</div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="reply-bar" id="replyBar">
+      <div class="reply-info">
+        <div class="reply-name" id="replyName"></div>
+        <div class="reply-text" id="replyText"></div>
+      </div>
+      <button class="icon-btn" onclick="cancelReply()" aria-label="Отменить ответ">✕</button>
+    </div>
+
+    <div class="input-bar" id="inputBar">
+      <button class="round-icon glass pressable" onclick="document.getElementById('fileInput').click()" aria-label="Прикрепить файл">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display:none" onchange="handleFileAttach(this)">
+      <div class="field glass r22">
+        <input type="text" id="msgInput" placeholder="Сообщение" oninput="onTypeInput()" onkeydown="if(event.key==='Enter')sendMessage()" aria-label="Текст сообщения">
+      </div>
+      <div class="mic-send-swap" id="micSendSwap">
+        <button class="round-icon glass icon-mic pressable" id="micBtn"
+             onpointerdown="startRecording(event)" onpointerup="stopRecording()" onpointerleave="onRecPointerLeave(event)"
+             onpointermove="onRecPointerMove(event)" aria-label="Голосовое сообщение">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg>
+        </button>
+        <button class="round-icon send-btn icon-send pressable" onclick="rippleFx(event); sendMessage()" aria-label="Отправить">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="#fff"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="recording-bar" id="recordingBar">
+      <div class="rec-dot"></div>
+      <div class="rec-timer" id="recTimer">0:00</div>
+      <div class="rec-live-wave" id="recWave"></div>
+      <button class="icon-btn pressable rec-cancel" onclick="rippleFx(event); cancelRecording()" aria-label="Отменить запись">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+      </button>
+      <button class="round-icon send-btn pressable" onclick="rippleFx(event); stopRecording()" aria-label="Отправить голосовое">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M20 6L9 17l-5-5"/></svg>
+      </button>
+    </div>
+    
+    <div class="channel-readonly-hint" id="channelReadonlyHint">Только администраторы могут писать в канале</div>
+
+    <div class="rec-hint" id="recHint">← Свайп влево для отмены</div>
+  </div>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <div class="screen" id="screen-settings">
+    <div class="screen-scroll">
+      <div class="settings-title">Настройки</div>
+      <div class="profile-mini glass r24 pressable" onclick="go('profile')" role="button" tabindex="0">
+        <div class="avatar av-g3" id="miniAvatar" style="width:56px;height:56px;font-size:18px;">?</div>
+        <div style="flex:1;"><div class="name" id="miniName">Пользователь</div><div class="username" id="miniUsername">@user</div></div>
+        <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+
+      <div class="section-row glass r20 pressable" onclick="go('profile')" role="button" tabindex="0">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="label">Аккаунт</div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="label">Конфиденциальность</div>
+        <div class="toggle" id="privacyToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); saveSettings()" role="switch" aria-checked="false"></div>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div class="label">Уведомления</div>
+        <div class="toggle on" id="notifToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); saveSettings()" role="switch" aria-checked="true"></div>
+      </div>
+      <div class="section-row glass r20 pressable" onclick="go('storage')" role="button" tabindex="0">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></div>
+        <div class="label">Хранилище</div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row glass r20 pressable" onclick="go('premium')" role="button" tabindex="0">
+        <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(234,179,8,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <div class="label">Premium <span class="premium-badge" id="settingsPremiumBadge" style="display:none;">PRO</span></div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row glass r20 pressable" onclick="go('customize')" role="button" tabindex="0">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 4.1L18 9l-4.1 1.9L12 15l-1.9-4.1L6 9l4.1-1.9L12 3z"/><path d="M5 19h14"/><path d="M9 19v2"/><path d="M15 19v2"/></svg></div>
+        <div class="label">Кастомизация</div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row glass r20 pressable" id="adminSettingsRow" style="display:none;" onclick="go('admin')" role="button" tabindex="0">
+        <div class="icon-wrap" style="background:rgba(239,68,68,0.12);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="label">Админ-панель</div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(234,179,8,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h6M9 14h6"/></svg></div>
+        <div class="label">Chiper Coin</div>
+        <span class="coin-badge" id="settingsCoinBadge">0 CC</span>
+      </div>
+    </div>
+
+    <div class="bottom-nav glass r30" data-nav="settings">
+      <div class="nav-bubble"></div>
+      <button class="nav-item" data-nav-idx="0" onclick="go('chats'); moveNavBubble(this)" aria-label="Чаты">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Чаты</span>
+      </button>
+      <button class="nav-item fab pressable" data-nav-idx="1" onclick="rippleFx(event); go('newchat'); moveNavBubble(this)" aria-label="Новый чат">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="nav-item" data-nav-idx="2" onclick="go('profile'); moveNavBubble(this)" aria-label="Профиль">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Профиль</span>
+      </button>
+      <button class="nav-item active" data-nav-idx="3" onclick="go('settings'); moveNavBubble(this)" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ===================== CUSTOMIZE ===================== -->
+  <div class="screen" id="screen-customize">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Кастомизация</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+        <div class="label">Тёмная тема</div>
+        <div class="toggle on" id="themeToggle" onclick="event.stopPropagation(); toggleTheme()" role="switch" aria-checked="true"></div>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="label">Тема по расписанию (22–7)</div>
+        <div class="toggle" id="themeScheduleToggle" onclick="event.stopPropagation(); this.classList.toggle('on'); state.settings.themeSchedule=this.classList.contains('on'); applyThemeSchedule(); saveMeta(); showToast(state.settings.themeSchedule?'Расписание вкл.':'Расписание выкл.');" role="switch" aria-checked="false"></div>
+      </div>
+      <div class="section-row glass r20">
+        <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h14"/></svg></div>
+        <div class="label">Компактный режим</div>
+        <div class="toggle" id="compactToggle" onclick="event.stopPropagation(); toggleCompact()" role="switch" aria-checked="false"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Акцентный цвет</div>
+      <div class="accent-swatches" style="padding:0 4px;">
+        <div class="swatch active" data-c="purple" onclick="setAccent('purple')" title="Фиолетовый"></div>
+        <div class="swatch" data-c="blue" onclick="setAccent('blue')" title="Синий"></div>
+        <div class="swatch" data-c="pink" onclick="setAccent('pink')" title="Розовый"></div>
+        <div class="swatch" data-c="teal" onclick="setAccent('teal')" title="Бирюзовый"></div>
+        <div class="swatch" data-c="orange" onclick="setAccent('orange')" title="Оранжевый"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Стиль пузырьков сообщений <span class="premium-badge" id="bubbleStyleProBadge" style="display:none;">PRO</span></div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:8px;" id="bubbleStyleHint">Стиль 1 доступен всем. Остальные 9 — в Chiper Premium.</div>
+      <div class="bubble-style-picker" id="bubbleStylePicker"></div>
+
+      <div class="section-label" style="margin-top:20px;">Позиция аватара на профиле</div>
+      <div class="avatar-pos-picker" id="avatarPosPicker" role="group" aria-label="Позиция аватара">
+        <button type="button" class="avatar-pos-btn" data-pos="left" onclick="setAvatarPosition('left')">◀ Слева</button>
+        <button type="button" class="avatar-pos-btn active" data-pos="center" onclick="setAvatarPosition('center')">● Центр</button>
+        <button type="button" class="avatar-pos-btn" data-pos="right" onclick="setAvatarPosition('right')">Справа ▶</button>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Галерея аватаров</div>
+      <div class="hint-text" style="padding:0 4px;margin-bottom:8px;">До 5 аватаров. Нажмите, чтобы сделать основным.</div>
+      <div id="avatarGallery" style="display:flex;flex-wrap:wrap;gap:10px;padding:4px;"></div>
+      <button type="button" class="glass full-btn r20" style="margin-top:12px;height:48px;font-weight:700;color:var(--text);" onclick="document.getElementById('multiAvatarFile').click()">＋ Добавить аватар</button>
+      <input type="file" id="multiAvatarFile" accept="image/*,video/*" style="display:none" onchange="addAvatarFromFile(this)">
+    </div>
+  </div>
+
+
+  <!-- ===================== ADMIN ===================== -->
+  <div class="screen" id="screen-admin">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Админ-панель</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="disclaimer-banner" style="margin-top:0;">Доступ только для администраторов. Выдача монет, звёзд, галочек и Premium.</div>
+      <div class="admin-card glass r20">
+        <div class="section-label" style="margin:0 0 8px;">Найти пользователя</div>
+        <div class="field glass r20" style="margin-top:0;"><input type="text" id="adminUserQuery" placeholder="@username или email" oninput="adminSearchUser()"></div>
+        <div id="adminUserResult" style="margin-top:10px;"></div>
+      </div>
+      <div class="admin-card glass r20" id="adminActions" style="display:none;">
+        <div style="font-weight:700;margin-bottom:8px;" id="adminTargetLabel">@user</div>
+        <div class="field glass r20"><input type="number" id="adminCoinAmount" placeholder="Chiper Coin (+/-)" inputmode="numeric"></div>
+        <button class="gradient-btn full-btn r20" style="margin-top:10px;height:44px;" onclick="adminGiveCoins()">Выдать / списать монеты</button>
+        <div class="field glass r20"><input type="number" id="adminStarAmount" placeholder="Звёзды (+/-)" inputmode="numeric"></div>
+        <button class="gradient-btn full-btn r20" style="margin-top:10px;height:44px;background:linear-gradient(135deg,#F59E0B,#EAB308);color:#1a1200;" onclick="adminGiveStars()">Выдать / списать звёзды</button>
+        <button class="glass full-btn r20" style="margin-top:12px;height:44px;font-weight:700;color:var(--text);" onclick="adminToggleVerified()">Галочка ✓ (вкл/выкл)</button>
+        <button class="glass full-btn r20" style="margin-top:10px;height:44px;font-weight:700;color:var(--text);" onclick="adminGivePremium(30)">Premium на 30 дней</button>
+        <button class="glass full-btn r20" style="margin-top:10px;height:44px;font-weight:700;color:var(--text);" onclick="adminGivePremium(365)">Premium на 1 год</button>
+        <button class="glass full-btn r20" style="margin-top:10px;height:44px;font-weight:700;color:var(--danger);" onclick="adminRevokePremium()">Снять Premium</button>
+        <button class="glass full-btn r20" style="margin-top:10px;height:44px;font-weight:700;color:var(--text);" onclick="adminToggleAdmin()">Права админа (вкл/выкл)</button>
+      </div>
+      <div class="admin-card glass r20">
+        <div class="section-label" style="margin:0 0 8px;">Быстрая выдача себе</div>
+        <button class="gradient-btn full-btn r20" style="height:44px;" onclick="adminSelfCoins(500)">+500 Chiper Coin себе</button>
+        <button class="glass full-btn r20" style="margin-top:10px;height:44px;font-weight:700;color:var(--text);" onclick="adminSelfStars(5)">+5 ★ себе</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== STORAGE ===================== -->
+  <div class="screen" id="screen-storage">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Хранилище</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="info-card glass r20"><div class="k">Сообщений</div><div class="v" id="storMsgs">0</div></div>
+      <div class="info-card glass r20"><div class="k">Голосовых</div><div class="v" id="storVoice">0</div></div>
+      <div class="info-card glass r20"><div class="k">Медиа / файлов</div><div class="v" id="storMedia">0</div></div>
+      <div class="info-card glass r20"><div class="k">База данных</div><div class="v">Cloud Firestore</div></div>
+      <div class="info-card glass r20"><div class="k">Cloud (Supabase)</div><div class="v" id="storSupabase">не подключён</div></div>
+      <div class="info-card glass r20"><div class="k">Примерный объём</div><div class="v" id="storSize">0 KB</div></div>
+      <button class="gradient-btn full-btn r20" style="margin-top:24px;" onclick="exportChats()">Экспорт chiper_app.db</button>
+      <button class="glass full-btn r20" style="margin-top:12px;height:56px;border-radius:20px;font-weight:700;color:var(--text);" onclick="document.getElementById('importFile').click()">Импорт БД</button>
+      <input type="file" id="importFile" accept="application/json,.json,.db" style="display:none" onchange="if(this.files[0]) importChats(this.files[0]).catch(e=>showToast('Ошибка импорта'))">
+      <button class="gradient-btn full-btn r20" style="margin-top:12px;background:linear-gradient(135deg,#EF4444,#DC2626);" onclick="clearAllStorage()">Очистить всё</button>
+    </div>
+  </div>
+
+  <!-- ===================== PREMIUM ===================== -->
+  <div class="screen" id="screen-premium">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="go('settings')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Chiper Premium</div>
+    </div>
+    <div class="screen-scroll">
+      <div class="premium-hero glass">
+        <div class="crown">👑</div>
+        <h2 id="premiumTitle">Chiper Premium</h2>
+        <p id="premiumSub">Больше свободы в профиле, каналах и чатах</p>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Анимированный аватар</div><div class="pf-desc">Видео-аватар (mp4/webm) вместо статичного фото</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Цвет профиля и обложки</div><div class="pf-desc">Кастомные градиенты и уникальный цвет профиля</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Статус + бейдж PRO</div><div class="pf-desc">Кастомный статус как в Discord и золотой бейдж</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Эксклюзивные темы</div><div class="pf-desc">Доп. акценты, gold-тема и премиум-эффекты</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></div>
+          <div class="pf-text"><div class="pf-title">Медиа до 25 МБ</div><div class="pf-desc">Большие файлы, фото и голосовые без ограничений</div></div>
+        </div>
+        <div class="premium-feature">
+          <div class="pf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="pf-text"><div class="pf-title">10 стилей пузырьков</div><div class="pf-desc">Меняйте оформление исходящих сообщений: закат, неон, стекло и др.</div></div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Тариф</div>
+      <div class="price-row">
+        <div class="price-card glass active" data-plan="month" onclick="selectPremiumPlan('month')">
+          <div class="price">149 ₽</div>
+          <div class="period">в месяц</div>
+        </div>
+        <div class="price-card glass" data-plan="year" onclick="selectPremiumPlan('year')">
+          <div class="price">999 ₽</div>
+          <div class="period">в год · −44%</div>
+        </div>
+      </div>
+
+      <div id="premiumActiveBox" style="display:none;margin-top:16px;">
+        <div class="info-card glass r20">
+          <div class="k">Статус</div>
+          <div class="v">Premium активен <span class="premium-badge">PRO</span></div>
+        </div>
+        <div class="info-card glass r20">
+          <div class="k">Действует до</div>
+          <div class="v" id="premiumUntilLabel">—</div>
+        </div>
+        <div class="field glass r20" style="margin-top:12px;">
+          <input type="text" id="premiumCustomStatus" placeholder="Кастомный статус (как в Discord)" maxlength="40" onchange="savePremiumCustomStatus()">
+        </div>
+        <div class="section-label">Цвет профиля</div>
+        <div class="accent-swatches" style="padding:0 4px;">
+          <div class="swatch" style="background:linear-gradient(135deg,#7C3AED,#A855F7)" data-pc="purple" onclick="setProfileColor('purple')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#2563EB,#3B82F6)" data-pc="blue" onclick="setProfileColor('blue')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#DB2777,#EC4899)" data-pc="pink" onclick="setProfileColor('pink')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#0D9488,#14B8A6)" data-pc="teal" onclick="setProfileColor('teal')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#EA580C,#F97316)" data-pc="orange" onclick="setProfileColor('orange')"></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#F59E0B,#EAB308)" data-pc="gold" onclick="setProfileColor('gold')"></div>
+        </div>
+        <button class="glass full-btn r20" style="margin-top:16px;height:48px;font-weight:700;color:var(--danger);" onclick="cancelPremium()">Отменить Premium</button>
+      </div>
+
+      
+      <div class="section-label" style="margin-top:18px;">Лимиты Free vs Premium</div>
+      <div class="limit-card glass r20">
+        <div><b class="limit-free">Free:</b> файлы до 8 МБ · 3 канала · статичный аватар</div>
+        <div style="margin-top:6px;"><b class="limit-pro">Premium:</b> файлы до 25 МБ · без лимита каналов · видео-аватар · PRO-бейдж</div>
+      </div>
+      <div id="checkoutFlow" style="display:none;margin-top:16px;">
+        <div class="checkout-steps"><div class="checkout-step on" id="ckStep1"></div><div class="checkout-step" id="ckStep2"></div></div>
+        <div id="checkoutStep1">
+          <div class="info-card glass r20"><div class="k">Тариф</div><div class="v" id="ckPlanLabel">149 ₽ / мес</div></div>
+          <div class="field glass r20"><input type="text" id="ckCard" placeholder="ACCT-000003" maxlength="19" inputmode="numeric"></div>
+          <div style="display:flex;gap:10px;">
+            <div class="field glass r20" style="flex:1;margin-top:10px;"><input type="text" id="ckExp" placeholder="ММ/ГГ" maxlength="5"></div>
+            <div class="field glass r20" style="flex:1;margin-top:10px;"><input type="text" id="ckCvv" placeholder="CVV" maxlength="3" inputmode="numeric"></div>
+          </div>
+          <p class="hint-text" style="margin-top:8px;">Демо-оплата: данные никуда не отправляются</p>
+          <button class="gradient-btn full-btn r20" style="background:linear-gradient(135deg,#F59E0B,#EAB308);color:#1a1200;" onclick="checkoutNext()">Продолжить</button>
+        </div>
+        <div id="checkoutStep2" style="display:none;">
+          <div class="info-card glass r20"><div class="k">Подтверждение</div><div class="v">Списание не произойдёт — это демо</div></div>
+          <button class="gradient-btn full-btn r20" style="background:linear-gradient(135deg,#F59E0B,#EAB308);color:#1a1200;" onclick="checkoutConfirm()">Активировать Premium</button>
+          <button class="glass full-btn r20" style="margin-top:10px;height:48px;font-weight:700;color:var(--text);" onclick="cancelCheckout()">Отмена</button>
+        </div>
+      </div>
+
+      <button class="gradient-btn full-btn r20" id="buyPremiumBtn" style="margin-top:20px;background:linear-gradient(135deg,#F59E0B,#EAB308);color:#1a1200;" onclick="buyPremium()">Оформить Premium</button>
+      <button class="glass full-btn r20" id="buyPremiumCoinsBtn" style="margin-top:12px;height:52px;font-weight:700;color:var(--text);" onclick="buyPremiumWithCoins()">Купить Premium за Chiper Coin <span id="premiumCoinPriceLabel">(300 CC / мес)</span></button>
+      <p class="hint-text" style="text-align:center;margin-top:8px;" id="myCoinsLabel">Баланс: 0 CC</p>
+      <p class="hint-text" style="text-align:center;margin-top:12px;padding:0 8px;">Демо-оплата: подписка активируется локально без реального списания.</p>
+    </div>
+  </div>
+
+  <!-- ===================== NEW CHAT ===================== -->
+  <div class="screen" id="screen-newchat">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Новый чат</div>
+    </div>
+    <div class="screen-scroll" style="padding-top:0;">
+      <div class="new-tabs">
+        <button class="new-tab active" id="tabUsers" onclick="switchNewTab('users')">Пользователи</button>
+        <button class="new-tab" id="tabGroup" onclick="switchNewTab('group')">Группа</button>
+        <button class="new-tab" id="tabChannel" onclick="switchNewTab('channel')">Канал</button>
+      </div>
+      <div id="newUsersPane">
+        <div class="search-bar glass r24">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="contactSearch" placeholder="Поиск по @username" oninput="searchUsersByUsername()" aria-label="Поиск по username">
+        </div>
+        <div class="section-label">Результаты</div>
+        <div id="contactList"></div>
+      </div>
+      <div id="newGroupPane" style="display:none;">
+        <div class="wizard-steps" id="groupWizardSteps" style="display:flex;gap:6px;padding:8px 4px 12px;">
+          <div class="wiz-dot active" data-step="1"></div><div class="wiz-dot" data-step="2"></div><div class="wiz-dot" data-step="3"></div>
+        </div>
+        <div class="create-group-card glass r22" id="groupStep1">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">1 · Название группы</div>
+          <div class="hint-text">Как в Telegram: сначала название и фото, потом участники</div>
+          <div style="display:flex;justify-content:center;margin:12px 0;">
+            <div class="avatar av-g3 pressable" id="groupAvatarPreview" style="width:72px;height:72px;font-size:24px;" onclick="document.getElementById('groupAvatarFile').click()">Г</div>
+            <input type="file" id="groupAvatarFile" accept="image/*" style="display:none" onchange="previewGroupAvatar(this)">
+          </div>
+          <div class="field glass r20"><input type="text" id="groupName" placeholder="Название группы" maxlength="60" oninput="document.getElementById('groupAvatarPreview').textContent=(this.value||'Г').slice(0,2).toUpperCase()"></div>
+          <div class="field glass r20" style="height:auto;padding:14px 18px;">
+            <textarea id="groupDesc" rows="2" placeholder="Описание (необязательно)" style="font-family:Inter,sans-serif;font-size:14px;width:100%;background:transparent;border:none;color:var(--text);outline:none;resize:none;"></textarea>
+          </div>
+          <button class="gradient-btn full-btn r20" style="margin-top:8px;" onclick="groupWizardNext(2)">Далее</button>
+        </div>
+        <div class="create-group-card glass r22" id="groupStep2" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">2 · Участники</div>
+          <div class="hint-text">Добавьте людей по @username (можно пропустить)</div>
+          <div class="field glass r20">
+            <input type="text" id="groupUserInput" placeholder="Добавить @username и Enter" maxlength="40"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addGroupMember();}">
+          </div>
+          <div class="member-chips" id="groupMemberChips"></div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="groupWizardNext(1)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="groupWizardNext(3)">Далее</button>
+          </div>
+        </div>
+        <div class="create-group-card glass r22" id="groupStep3" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">3 · Готово</div>
+          <div class="hint-text">Проверьте данные и создайте группу</div>
+          <div class="info-card glass r20" style="margin-top:8px;"><div class="k">Название</div><div class="v" id="groupConfirmName">—</div></div>
+          <div class="info-card glass r20"><div class="k">Участников</div><div class="v" id="groupConfirmMembers">1</div></div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="groupWizardNext(2)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="createGroupOrChannel('group')">Создать</button>
+          </div>
+        </div>
+      </div>
+      <div id="newChannelPane" style="display:none;">
+        <div class="wizard-steps" style="display:flex;gap:6px;padding:8px 4px 12px;">
+          <div class="wiz-dot active" id="chDot1"></div><div class="wiz-dot" id="chDot2"></div><div class="wiz-dot" id="chDot3"></div>
+        </div>
+        <div class="create-group-card glass r22" id="channelStep1">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">1 · Название и handle</div>
+          <div class="hint-text">Канал — публичная лента. Подписчики только читают</div>
+          <div style="display:flex;justify-content:center;margin:12px 0;">
+            <div class="avatar av-g4 pressable" id="channelAvatarPreview" style="width:72px;height:72px;font-size:24px;" onclick="document.getElementById('channelAvatarFile').click()">К</div>
+            <input type="file" id="channelAvatarFile" accept="image/*" style="display:none" onchange="previewChannelAvatar(this)">
+          </div>
+          <div class="field glass r20"><input type="text" id="channelName" placeholder="Название канала" maxlength="60" oninput="document.getElementById('channelAvatarPreview').textContent=(this.value||'К').slice(0,2).toUpperCase()"></div>
+          <div class="field glass r20"><input type="text" id="channelHandle" placeholder="@channel_handle" maxlength="32"></div>
+          <button class="gradient-btn full-btn r20" style="margin-top:8px;" onclick="channelWizardNext(2)">Далее</button>
+        </div>
+        <div class="create-group-card glass r22" id="channelStep2" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">2 · Описание</div>
+          <div class="hint-text">Расскажите, о чём канал</div>
+          <div class="field glass r20" style="height:auto;padding:14px 18px;">
+            <textarea id="channelDesc" rows="4" placeholder="Описание канала" style="font-family:Inter,sans-serif;font-size:14px;width:100%;background:transparent;border:none;color:var(--text);outline:none;resize:none;"></textarea>
+          </div>
+          <div class="section-label">Тип</div>
+          <div class="section-row glass r20" style="margin-top:0;">
+            <div class="label" style="flex:1;">Публичный канал</div>
+            <div class="toggle on" id="channelPublicToggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="channelWizardNext(1)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="channelWizardNext(3)">Далее</button>
+          </div>
+        </div>
+        <div class="create-group-card glass r22" id="channelStep3" style="display:none;">
+          <div style="font-weight:700;font-size:15px;font-family:'Plus Jakarta Sans',sans-serif;">3 · Создать канал</div>
+          <div class="info-card glass r20" style="margin-top:8px;"><div class="k">Название</div><div class="v" id="channelConfirmName">—</div></div>
+          <div class="info-card glass r20"><div class="k">Handle</div><div class="v" id="channelConfirmHandle">—</div></div>
+          <div style="display:flex;gap:10px;margin-top:12px;">
+            <button class="glass full-btn r20" style="height:48px;font-weight:700;color:var(--text);" onclick="channelWizardNext(2)">Назад</button>
+            <button class="gradient-btn full-btn r20" style="margin-top:0;" onclick="createGroupOrChannel('channel')">Создать канал</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===================== GLOBAL SEARCH ===================== -->
+  <div class="screen" id="screen-gsearch">
+    <div class="topbar">
+      <button type="button" class="icon-btn pressable r20" onclick="go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="search-bar glass r24" style="flex:1;">
+        <img src="assets/search.svg" alt="" width="20" height="20" style="opacity:0.75;flex-shrink:0;" onerror="this.style.display='none'">
+        <input type="text" id="globalSearchInput" placeholder="Чаты, @username, сообщения…" oninput="runGlobalSearch()" aria-label="Глобальный поиск" autofocus>
+      </div>
+    </div>
+    <div class="screen-scroll" id="globalSearchResults">
+      <div class="empty-state">
+        <div class="emoji">🔍</div>
+        <div class="title">Глобальный поиск</div>
+        <div class="desc">Ищите по имени, @username, каналам и тексту сообщений во всех чатах</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ARCHIVE ===================== -->
+  <div class="screen" id="screen-archive">
+    <div class="topbar">
+      <button class="icon-btn pressable r20" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:20px; font-weight:700;">Архив</div>
+    </div>
+    <div class="screen-scroll" style="padding-top:0;" id="archiveList"></div>
+  </div>
+
+  <!-- ===================== PROFILE (own, editable) ===================== -->
+  <div class="screen" id="screen-profile">
+    <div class="screen-scroll" style="padding-top:0; padding-bottom:100px;">
+      <div class="banner r28" id="profileBanner" style="border-radius:0 0 28px 28px;">
+        <button class="back icon-btn glass r20 pressable" onclick="rippleFx(event); go('chats')" aria-label="Назад">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="cam icon-btn glass r20 pressable" onclick="rippleFx(event); document.getElementById('bannerFile').click()" aria-label="Сменить обложку">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <input type="file" id="bannerFile" accept="image/*" style="display:none" onchange="handleImageUpload(this,'banner')">
+      </div>
+      <div class="profile-head avatar-center" id="profileHead">
+        <div class="avatar big-avatar av-g3 pressable" id="bigAvatar" onclick="openAvatarViewer()" role="button" tabindex="0" aria-label="Аватар">?</div>
+        <input type="file" id="avatarFile" accept="image/*,video/mp4,video/webm,video/quicktime" style="display:none" onchange="handleImageUpload(this,'avatar')">
+
+        <div id="viewMode">
+          <div class="profile-name" id="profileNameView">Пользователь</div>
+          <div class="profile-username" id="profileUserView">@user</div>
+          <div class="profile-bio" id="profileBioView">Привет! Я в Chiper 👋</div>
+          <div id="profileExtraInfo" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+        </div>
+
+        <div class="profile-actions">
+          <button type="button" class="gradient-btn pressable" id="editToggleBtn" style="position:relative;z-index:5;" onclick="event.stopPropagation(); go('profile-edit')">Изменить профиль</button>
+          <button class="glass r18 pressable" style="flex:1;height:46px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:none;color:var(--text);cursor:pointer;" onclick="rippleFx(event); shareProfile()" title="Поделиться">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+          </button>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card glass r20"><div class="num" id="statChats">0</div><div class="lbl">Чатов</div></div>
+          <div class="stat-card glass r20"><div class="num" id="statMedia">0</div><div class="lbl">Медиа</div></div>
+          <div class="stat-card glass r20"><div class="num" id="statGroups">0</div><div class="lbl">Групп</div></div>
+        </div>
+        <div class="info-card glass r20" style="margin-top:14px;">
+          <div class="k">Логин</div>
+          <div class="v" id="infoLogin">@user</div>
+        </div>
+        <div class="info-card glass r20">
+          <div class="k">На связи</div>
+          <div class="v" id="infoPresence" style="color:var(--online);font-weight:600;">в сети</div>
+        </div>
+        <div class="info-card glass r20" id="infoBirthdayCard" style="display:none;">
+          <div class="k">Дата рождения</div>
+          <div class="v" id="infoBirthday">—</div>
+        </div>
+        <div class="info-card glass r20" id="infoCityCard" style="display:none;">
+          <div class="k">Город</div>
+          <div class="v" id="infoCity">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav glass r30" data-nav="profile">
+      <div class="nav-bubble"></div>
+      <button class="nav-item" data-nav-idx="0" onclick="go('chats'); moveNavBubble(this)" aria-label="Чаты">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>Чаты</span>
+      </button>
+      <button class="nav-item fab pressable" data-nav-idx="1" onclick="rippleFx(event); go('newchat'); moveNavBubble(this)" aria-label="Новый чат">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="nav-item active" data-nav-idx="2" onclick="go('profile'); moveNavBubble(this)" aria-label="Профиль">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Профиль</span>
+      </button>
+      <button class="nav-item" data-nav-idx="3" onclick="go('settings'); moveNavBubble(this)" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== PROFILE EDIT ===================== -->
+  <div class="screen" id="screen-profile-edit">
+    <div class="topbar" style="position:relative;z-index:5;">
+      <button type="button" class="icon-btn pressable r20" onclick="event.stopPropagation(); go('profile')" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="font-display" style="font-size:18px; font-weight:700; flex:1;">Редактирование</div>
+      <button type="button" class="gradient-btn pressable" style="height:36px;padding:0 14px;border-radius:12px;font-size:13px;position:relative;z-index:5;" onclick="event.stopPropagation(); saveProfileEdit()">Сохранить</button>
+    </div>
+    <div class="screen-scroll" style="padding-bottom:40px;">
+      <div class="section-label">Основное</div>
+      <div class="field glass r20"><input id="editName" type="text" placeholder="Имя" aria-label="Имя" maxlength="40"></div>
+      <div class="field glass r20"><input id="editUser" type="text" placeholder="@username" aria-label="Username" maxlength="32"></div>
+      <div class="field glass r20" style="height:auto; padding:14px 18px;">
+        <textarea id="editBio" rows="3" placeholder="О себе" style="font-family:'Inter',sans-serif; font-size:15px; width:100%; background:transparent; border:none; color:var(--text); outline:none; resize:none;" aria-label="О себе"></textarea>
+      </div>
+
+      <div class="section-label" style="margin-top:20px;">Личные данные</div>
+      <div class="field glass r20">
+        <input id="editBirthday" type="date" aria-label="Дата рождения" style="color-scheme:dark;">
+      </div>
+      <div class="hint-text" style="padding:0 4px;">Дата рождения видна только вам (или по настройке приватности)</div>
+      <div class="field glass r20"><input id="editCity" type="text" placeholder="Город" aria-label="Город" maxlength="60"></div>
+      <div class="field glass r20"><input id="editPhone" type="tel" placeholder="Телефон (необязательно)" aria-label="Телефон" maxlength="20"></div>
+      <div class="field glass r20" style="height:auto;padding:10px 18px; flex-direction:column; align-items:stretch; gap:6px;">
+        <label style="font-size:12px;color:var(--text-secondary);">Пол</label>
+        <select id="editGender" style="background:transparent;border:none;outline:none;color:var(--text);font-size:15px;font-family:Inter,sans-serif;width:100%;">
+          <option value="">Не указан</option>
+          <option value="male">Мужской</option>
+          <option value="female">Женский</option>
+          <option value="other">Другой</option>
+        </select>
+      </div>
+      <div class="field glass r20"><input id="editWebsite" type="url" placeholder="Сайт / ссылка" aria-label="Сайт" maxlength="120"></div>
+
+      <div class="auth-error" id="profileEditError"></div>
+      <button type="button" class="gradient-btn full-btn r20 pressable" style="margin-top:24px;position:relative;z-index:5;" onclick="event.stopPropagation(); saveProfileEdit()">Сохранить изменения</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-userinfo">
+    <div class="screen-scroll" style="padding-top:0;">
+      <div class="banner r28" id="userinfoBanner" style="border-radius:0 0 28px 28px;">
+        <button class="back icon-btn glass r20 pressable" onclick="rippleFx(event); go('chat')" aria-label="Назад">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="profile-head">
+        <div class="avatar big-avatar av-g1" id="userinfoAvatar">?</div>
+        <div class="profile-name" id="userinfoName">Пользователь</div>
+        <div class="profile-username" id="userinfoUser">@user</div>
+        <div class="profile-bio" id="userinfoBio">—</div>
+
+        <!-- User actions -->
+        <div class="profile-actions" id="userinfoActionsUser">
+          <button class="gradient-btn pressable" onclick="go('chat')">Написать</button>
+          <button class="glass r18 pressable" id="userinfoCallBtn" style="height:46px; display:flex; align-items:center; justify-content:center;" onclick="startCall(false)" aria-label="Позвонить">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </button>
+          <button class="glass r18 pressable" id="userinfoVideoBtn" style="height:46px; display:flex; align-items:center; justify-content:center;" onclick="startCall(true)" aria-label="Видеозвонок">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </button>
+        </div>
+
+        <!-- Channel actions -->
+        <div class="profile-actions" id="userinfoActionsChannel" style="display:none;">
+          <button class="gradient-btn pressable" id="subscribeBtn" onclick="toggleSubscribe()" style="flex:2;">Подписаться</button>
+          <button class="glass r18 pressable" style="height:46px;flex:1;display:flex;align-items:center;justify-content:center;" onclick="go('chat')" aria-label="Открыть">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+
+        <!-- Group actions -->
+        <div class="profile-actions" id="userinfoActionsGroup" style="display:none;">
+          <button class="gradient-btn pressable" id="joinGroupBtn" onclick="toggleJoinGroup()" style="flex:2;">Войти в группу</button>
+          <button class="glass r18 pressable" style="height:46px;flex:1;display:flex;align-items:center;justify-content:center;" onclick="go('chat')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+
+        <div class="stats-row" id="userinfoStats">
+          <div class="stat-card glass r20"><div class="num" id="userinfoChats">0</div><div class="lbl" id="userinfoStat1Lbl">Общих</div></div>
+          <div class="stat-card glass r20"><div class="num" id="userinfoMedia">0</div><div class="lbl" id="userinfoStat2Lbl">Медиа</div></div>
+          <div class="stat-card glass r20"><div class="num" id="userinfoSince">—</div><div class="lbl" id="userinfoStat3Lbl">В Chiper</div></div>
+        </div>
+
+        <div id="userinfoUserCards">
+          <div class="info-card glass r20"><div class="k">Логин</div><div class="v" id="userinfoLogin">@user</div></div>
+          <div class="info-card glass r20"><div class="k">На связи</div><div class="v" id="userinfoOnline">—</div></div>
+        </div>
+
+        <div id="userinfoChannelCards" style="display:none;">
+          <div class="info-card glass r20"><div class="k">Тип</div><div class="v">Публичный канал</div></div>
+          <div class="info-card glass r20"><div class="k">Подписчики</div><div class="v" id="channelSubsCount">1</div></div>
+          <div class="info-card glass r20"><div class="k">Handle</div><div class="v" id="channelHandleView">@channel</div></div>
+        </div>
+
+        <div id="userinfoGroupCards" style="display:none;">
+          <div class="info-card glass r20"><div class="k">Тип</div><div class="v">Группа</div></div>
+          <div class="info-card glass r20"><div class="k">Участников</div><div class="v" id="groupMembersCount">1</div></div>
+        </div>
+
+        <div class="section-label" id="membersSectionLabel" style="display:none;">Участники</div>
+        <div id="membersList" style="display:none;"></div>
+
+        <div class="section-label" id="userinfoMediaLabel">Общие медиа</div>
+        <div class="media-grid" id="userinfoMediaGrid"></div>
+
+        <div class="section-row glass r20 pressable" id="userinfoBlockRow" style="margin-top:16px; margin-bottom:20px;" role="button" tabindex="0">
+          <div class="icon-wrap" style="background:rgba(239,68,68,0.12);"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg></div>
+          <div class="label" style="color:#EF4444;" id="userinfoDangerLabel">Заблокировать</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+  <!-- Bottom sheet -->
+  <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+  <div class="bottom-sheet" id="bottomSheet" role="dialog" aria-label="Действия">
+    <div class="sheet-handle"></div>
+    <div id="sheetContent"></div>
+  </div>
+  <div class="aria-live" aria-live="polite" id="ariaLive"></div>
+
+  <!-- Call overlay -->
+  <div class="call-overlay" id="callOverlay">
+    <video class="call-local-video" id="callLocalVideo" autoplay playsinline muted style="display:none"></video>
+    <video class="call-remote-video" id="callRemoteVideo" autoplay playsinline style="display:none"></video>
+    <div class="call-pulse-ring" id="callPulseRing">
+      <div class="call-avatar-fallback" id="callAvatarFallback" style="margin:0;width:100px;height:100px;font-size:36px;">?</div>
+    </div>
+    <div class="call-participants" id="callParticipants" style="display:none;"></div>
+  <div class="call-info">
+      <div class="name" id="callName">Звонок</div>
+      <div class="status" id="callStatus">Соединение…</div>
+    </div>
+    <div class="call-actions">
+      <button class="call-btn mute" id="callMuteBtn" onclick="toggleCallMute()" aria-label="Микрофон">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg>
+      </button>
+      <button class="call-btn speaker" id="callSpeakerBtn" onclick="toggleCallSpeaker()" aria-label="Динамик">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </button>
+      <button class="call-btn hangup" onclick="endCall()" aria-label="Завершить">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.68 13.31a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 24 20.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 6.11 4h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L10.68 13.31z" transform="rotate(135 12 12)"/></svg>
+      </button>
+      <button class="call-btn cam" id="callCamBtn" onclick="toggleCallCam()" aria-label="Камера" style="display:none">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- Avatar viewer -->
+  <div class="avatar-viewer-overlay" id="avatarViewerOverlay" onclick="if(event.target===this)closeAvatarViewer()">
+    <img class="avatar-viewer-img" id="avatarViewerImg" alt="Аватар" style="display:none">
+    <video class="avatar-viewer-img" id="avatarViewerVideo" autoplay muted loop playsinline style="display:none"></video>
+    <div class="avatar-viewer-actions">
+      <button class="gradient-btn" onclick="downloadCurrentAvatar()">Скачать</button>
+      <button class="glass" style="color:var(--text)" onclick="document.getElementById('avatarFile').click()">Заменить</button>
+      <button class="glass" style="color:var(--text)" onclick="closeAvatarViewer()">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Incoming call banner -->
+  <div class="incoming-call-banner glass" id="incomingCallBanner">
+    <div class="avatar av-g1" id="incomingCallAvatar" style="width:44px;height:44px;font-size:14px;">?</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-family:Plus Jakarta Sans,sans-serif;" id="incomingCallName">Звонок</div>
+      <div style="font-size:12px;color:var(--text-secondary);" id="incomingCallType">Входящий</div>
+    </div>
+    <div class="ica-actions">
+      <button class="ica-btn ica-reject" onclick="rejectIncomingCall()" aria-label="Отклонить">✕</button>
+      <button class="ica-btn ica-accept" onclick="acceptIncomingCall()" aria-label="Принять">✓</button>
+    </div>
+  </div>
+
+<!-- Side Drawer (outside #app so it isn't clipped) -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<aside class="drawer" id="sideDrawer" role="dialog" aria-label="Меню" aria-modal="true">
+  <div class="drawer-header">
+    <img src="assets/logo.svg" alt="" width="24" height="24" class="nav-brand-logo" style="position:absolute;top:16px;right:16px;border-radius:6px;opacity:0.9;">
+    <div class="avatar av-g3" id="drawerAvatar" style="width:56px;height:56px;font-size:18px;">?</div>
+    <div class="info">
+      <div class="name" id="drawerName">Пользователь</div>
+      <div class="user" id="drawerUser">@user</div>
+    </div>
+  </div>
+  <nav class="drawer-nav">
+    <button class="drawer-item" onclick="closeDrawer(); go('profile')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      Профиль
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('newchat')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+      Новый чат
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('archive')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></div>
+      Архив
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('settings')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      Настройки
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('storage')">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></div>
+      Хранилище
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); go('premium')">
+      <div class="icon-wrap" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(234,179,8,0.15));"><svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+      Premium
+    </button>
+    <button class="drawer-item" onclick="closeDrawer(); toggleTheme()">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></div>
+      Сменить тему
+    </button>
+    <button class="drawer-item danger" onclick="closeDrawer(); if(confirm('Выйти из аккаунта?')){ try{ firebaseAuth && firebaseAuth.signOut(); }catch(_){} state.loggedIn=false; state.profile={name:'',username:'',uid:null}; state.chats={}; window._pendingReg=null; document.body.classList.remove('authed'); go('login'); }">
+      <div class="icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></div>
+      Выйти
+    </button>
+  </nav>
+  <div class="drawer-footer">Chiper · приватные сообщения</div>
+</aside>
+
+
+<!-- Core -->
+<script src="js/core/data.js"></script>
+<script src="js/core/theme.js"></script>
+<script src="js/core/nav.js"></script>
+<script src="js/core/ui.js"></script>
+<script src="js/core/product-v4.js"></script>
+
+<!-- Auth / Login / Registration -->
+<script src="js/auth/auth.js"></script>
+
+<!-- Chat -->
+<script src="js/chat/chat.js"></script>
+
+<!-- Calls -->
+<script src="js/calls/calls-v1.js"></script>
+
+<!-- Premium -->
+<script src="js/premium/premium-core.js"></script>
+
+<!-- Coin + Admin (Chiper Coin, badges, admin panel) -->
+<script src="js/coin/coins-admin.js"></script>
+
+<!-- App init (must be last) -->
+<script src="js/app.js"></script>
+</body>
+</html>
